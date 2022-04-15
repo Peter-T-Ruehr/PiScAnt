@@ -1,0 +1,9 @@
+# camera control commands:
+raspistill -t 1 -o image.jpg -p100,100,300,200
+
+raspistill -t 1 -o image.jpg -n
+
+raspistill -t 0 -k -o image.jpg -p 0,0,800,600
+
+
+raspistill -t 0 -k -o image.jpg -p 30,30,800,600 -ISO 200, -sh 0, -co 0, -br 50, -sa 0
