@@ -1,3 +1,7 @@
+# enable legacy camera:
+sudo raspi-config
+sudo reboot
+
 # camera control commands:
 raspistill -t 1 -o image.jpg -p100,100,300,200
 
