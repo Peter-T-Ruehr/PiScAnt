@@ -1,0 +1,14 @@
+# install pololu tic 500 drivers:
+# https://www.pololu.com/docs/0J71/all#1.2
+cd ~/Downloads
+tar -xvf pololu-tic-*.tar.xz
+sudo pololu-tic-*/install.sh
+# (re-)plug tic
+# check if tic is detectable
+ticcmd --list
+# when 3 tics are connected:
+00363443,         Tic T500 Stepper Motor Controller            
+00338490,         Tic T500 Stepper Motor Controller            
+00374283,         Tic T500 Stepper Motor Controller 
+# start Tic Cotnrol Center
+ticgui
