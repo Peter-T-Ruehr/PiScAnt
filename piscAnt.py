@@ -1,23 +1,29 @@
+# v.0.0.9001
+
 from time import sleep
+from time import strftime
 from picamerax import PiCamera
 import os
 import subprocess
 import tkinter as tk 
 from tkinter import messagebox
 
+def start_camera():
+    camera = PiCamera()
+    camera.resolution = (640, 480)
+    preview = camera.start_preview()
+    preview.fullscreen = False
+    preview.window = (800, 5, 640, 480)
+    
+def stop_camera():
+    camera.stop_preview()
+    camera.close()
+    
 camera = PiCamera()
-camera.resolution = (320, 240)# (4056, 3040) # (1024, 768)
-camera.start_preview()
+camera.resolution = (640, 480)# (4056, 3040) # (1024, 768)
 preview = camera.start_preview()
 preview.fullscreen = False
-preview.window = (800, 5, 320, 240)
-
-
-# Uses ticcmd to send and receive data from the Tic over USB.
-# Works with either Python 2 or Python 3.
-#
-# NOTE: The Tic's control mode must be "Serial / I2C / USB".
-
+preview.window = (800, 5, 640, 480)
 
 x_axis_stop_dir = 'rev'
 z_axis_stop_dir = 'fwd'
@@ -56,7 +62,7 @@ def move_motor_by_steps(axis, by_steps):
     curr_axis_ID = get_motor_ID(axis)
     
     position_y = get_motor_pos(axis)
-    print(axis + '-axis now at ' + str(position_y))
+    # print(axis + '-axis now at ' + str(position_y))
     
     target = position_y + by_steps
     
@@ -66,8 +72,8 @@ def move_motor_by_steps(axis, by_steps):
     os.system(cmd)
     
     # sleep shortly to read correct number
-    sleep(0.25)
-    print(axis + '-axis now at ' + str(get_motor_pos(axis)))
+    # sleep(0.25)
+    # print(axis + '-axis now at ' + str(get_motor_pos(axis)))
 
 def energize():
     cmd = 'ticcmd -d 00363443 --energize'
@@ -93,7 +99,7 @@ def move_motor_to(axis, target):
     curr_axis_ID = get_motor_ID(axis)
         
     position_y = get_motor_pos(axis)
-    print(axis + '-axis now at ' + str(position_y))
+    # print(axis + '-axis now at ' + str(position_y))
     
     by_steps = target - position_y
     
@@ -104,9 +110,35 @@ def move_motor_to(axis, target):
     os.system(cmd)
     
     # sleep shortly to read correct number
-    sleep(0.25)
-    get_motor_ID(axis)
+    # sleep(0.25)
+    # get_motor_ID(axis)
     # print(axis + '-axis now at ' + str(get_motor_pos(curr_axis_ID)))
+
+def shoot_image_scan(x, y, z):
+    # ~ x_pos = get_motor_pos('x')
+    # ~ y_pos = get_motor_pos('y')
+    # ~ z_pos = get_motor_pos('z')
+    curr_image_name = './img_02/x_' + str(x) + '_y_' + str(y) + '_z_' + str(z)  + '.jpg'
+    # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
+    print('Saving ' + curr_image_name + '...')
+    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
+    os.system(cmd)
+    
+def shoot_image_test():
+    # ~ x_pos = get_motor_pos('x')
+    # ~ y_pos = get_motor_pos('y')
+    # ~ z_pos = get_motor_pos('z')
+    stop_camera()
+    timestr = strftime("%Y%m%d-%H%M%S")
+    curr_image_name = './img_02/x_' + timestr + '.jpg'
+    # ~ # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
+    print('Saving ' + curr_image_name + '...')
+    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
+    os.system(cmd)
+    # ~ camera.resolution = (1024, 768)
+    # ~ camera.capture(curr_image_name)
+    # ~ camera.resolution = (640, 480)
+    start_camera()
 
 def start_scan(): 
     camera.stop_preview()
@@ -123,48 +155,64 @@ def start_scan():
     for x in range(2):
         for y in range(2):
             for z in range(2):
-                x_pos = get_motor_pos('x')
-                y_pos = get_motor_pos('y')
-                z_pos = get_motor_pos('z')
-                cmd = 'raspistill -t 1 -o ./img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
-                os.system(cmd)
+                shoot_image_scan(x, y, z)
               
                 move_motor_by_steps('z', steps_z)  
                 
                 if(z == max(range(2))):
-                    x_pos = get_motor_pos('x')
-                    y_pos = get_motor_pos('y')
-                    z_pos = get_motor_pos('z')
-                    cmd = 'raspistill -t 1 -o ./img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
-                    os.system(cmd)
+                    z += 1
+                    shoot_image_scan(x, y, z)
                     
                     move_motor_to('z', z_pos_init) 
             
             move_motor_by_steps('y', steps_y)
-            if(y == max(range(2))):                
-                move_motor_to('y', y_pos_init)
-        move_motor_by_steps('x', steps_x)
-        if(x == max(range(2))):
-            for y in range(2):
+            if(y == max(range(2))): 
+                y += 1   
                 for z in range(2):
-                    x_pos = get_motor_pos('x')
-                    y_pos = get_motor_pos('y')
-                    z_pos = get_motor_pos('z')
-                    cmd = 'raspistill -t 1 -o ./img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
-                    os.system(cmd)
+                    shoot_image_scan(x, y, z)
                   
                     move_motor_by_steps('z', steps_z)  
                     
                     if(z == max(range(2))):
-                        x_pos = get_motor_pos('x')
-                        y_pos = get_motor_pos('y')
-                        z_pos = get_motor_pos('z')
-                        cmd = 'raspistill -t 1 -o ./img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
-                        os.system(cmd)
+                        z += 1
+                        shoot_image_scan(x, y, z)
                         
-                        move_motor_to('z', z_pos_init) 
+                        move_motor_to('z', z_pos_init)             
+                move_motor_to('y', y_pos_init)
+        move_motor_by_steps('x', steps_x)
+        sleep(1)
+        if(x == max(range(2))):
+            x += 1
+            for y in range(2):
+                for z in range(2):
+                    shoot_image_scan(x, y, z)
+                  
+                    move_motor_by_steps('z', steps_z)  
                 
+                if(z == max(range(2))):
+                    z += 1
+                    shoot_image_scan(x, y, z)
+                    
+                    move_motor_to('z', z_pos_init) 
+            
                 move_motor_by_steps('y', steps_y)
+                if(y == max(range(2))):  
+                    y += 1  
+                    for z in range(2):
+                        shoot_image_scan(x, y, z)
+                      
+                        move_motor_by_steps('z', steps_z)  
+                        
+                        if(z == max(range(2))):
+                            z += 1
+                            shoot_image_scan(x, y, z)
+                            
+                            move_motor_to('z', z_pos_init)             
+                    move_motor_to('y', y_pos_init)
+    print('done')
+
+
+
 # GUI
 root = tk.Tk() 
 root.title("piscAnt v.0.0.9000")         
@@ -172,7 +220,8 @@ root.title("piscAnt v.0.0.9000")
 root.minsize(width=350, height=70) 
 label = tk.Label(root, text="piscAnt", fg="black", font="Verdana 14 bold") 
 #label.pack()
-
+shoot = tk.Button(root, text='Take photo',  
+width=15, state='normal', command=lambda: shoot_image_test())
 energize_b = tk.Button(root,
     text='Energize',
     bg='green',
@@ -245,7 +294,9 @@ width=15, state='normal', command=lambda: start_scan())
 r=0
 energize_b.grid(row=r,column=0)
 deenergize_b.grid(row=r,column=1)
-r+=2
+r+=1
+shoot.grid(row=r, column=0, columnspan = 2)
+r+=1
 lable_turntable.grid(row=r, column=0, columnspan = 2)
 r+=1
 left_sm.grid(row=r,column=0) 
@@ -277,3 +328,4 @@ start_scan_b.grid(row=r,column=0, columnspan = 2)
 # fan_off['state']='disabled'
 # pump_off['state']='disabled'
 root.mainloop()
+
