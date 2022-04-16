@@ -1,4 +1,4 @@
-# v.0.0.9002
+# v.0.0.9003
 
 from time import sleep
 from time import strftime
@@ -61,10 +61,10 @@ def get_motor_pos(axis):
 def move_motor_by_steps(axis, by_steps):
     curr_axis_ID = get_motor_ID(axis)
     
-    position_y = get_motor_pos(axis)
-    # print(axis + '-axis now at ' + str(position_y))
+    curr_position = get_motor_pos(axis)
+    # print(axis + '-axis now at ' + str(curr_position))
     
-    target = position_y + by_steps
+    target = curr_position + by_steps
     
     # ~ print('moving ' + axis + '-axis by ' + str(by_steps) + '...')
     print('moving ' + axis + '-axis by ' + str(by_steps) + ' to ' + str(target) + '...')
@@ -99,10 +99,10 @@ def deenergize():
 def move_motor_to(axis, target):
     curr_axis_ID = get_motor_ID(axis)
         
-    position_y = get_motor_pos(axis)
-    # print(axis + '-axis now at ' + str(position_y))
+    curr_position = get_motor_pos(axis)
+    # print(axis + '-axis now at ' + str(curr_position))
     
-    by_steps = target - position_y
+    by_steps = target - curr_position
     
     print('moving ' + axis + '-axis by ' + str(by_steps) + ' to ' + str(target) + '...')
     
@@ -165,6 +165,8 @@ def start_scan():
     positions_z = 50
     steps_z = round((z_max - z_min)/positions_z)
     print('steps_z = ' + str(steps_z))
+    
+    print('Making ' + str(steps_x*steps_y*steps_z) + ' photos...')
     
     x_pos_init = x_min
     y_pos_init = y_min
@@ -351,4 +353,5 @@ start_scan_b.grid(row=r,column=0, columnspan = 2)
 # fan_off['state']='disabled'
 # pump_off['state']='disabled'
 root.mainloop()
+
 
