@@ -1,4 +1,4 @@
-# v.0.0.9001
+# v.0.0.9002
 
 from time import sleep
 from time import strftime
@@ -66,7 +66,8 @@ def move_motor_by_steps(axis, by_steps):
     
     target = position_y + by_steps
     
-    print('moving ' + axis + '-axis by ' + str(by_steps) + '...')
+    # ~ print('moving ' + axis + '-axis by ' + str(by_steps) + '...')
+    print('moving ' + axis + '-axis by ' + str(by_steps) + ' to ' + str(target) + '...')
     
     cmd = 'ticcmd --exit-safe-start -d ' + curr_axis_ID + ' --position ' + str(target)
     os.system(cmd)
@@ -103,7 +104,6 @@ def move_motor_to(axis, target):
     
     by_steps = target - position_y
     
-    
     print('moving ' + axis + '-axis by ' + str(by_steps) + ' to ' + str(target) + '...')
     
     cmd = 'ticcmd --exit-safe-start -d ' + curr_axis_ID + ' --position ' + str(target)
@@ -118,62 +118,85 @@ def shoot_image_scan(x, y, z):
     # ~ x_pos = get_motor_pos('x')
     # ~ y_pos = get_motor_pos('y')
     # ~ z_pos = get_motor_pos('z')
+    sleep(0.5)
     curr_image_name = './img_02/x_' + str(x) + '_y_' + str(y) + '_z_' + str(z)  + '.jpg'
     # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
     print('Saving ' + curr_image_name + '...')
     cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
     os.system(cmd)
     
-def shoot_image_test():
+# ~ def shoot_image_test():
     # ~ x_pos = get_motor_pos('x')
     # ~ y_pos = get_motor_pos('y')
     # ~ z_pos = get_motor_pos('z')
-    stop_camera()
-    timestr = strftime("%Y%m%d-%H%M%S")
-    curr_image_name = './img_02/x_' + timestr + '.jpg'
-    # ~ # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
-    print('Saving ' + curr_image_name + '...')
-    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
-    os.system(cmd)
+    # ~ stop_camera()
+    # ~ timestr = strftime("%Y%m%d-%H%M%S")
+    # ~ curr_image_name = './img_02/x_' + timestr + '.jpg'
+    # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
+    # ~ print('Saving ' + curr_image_name + '...')
+    # ~ cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
+    # ~ os.system(cmd)
     # ~ camera.resolution = (1024, 768)
     # ~ camera.capture(curr_image_name)
     # ~ camera.resolution = (640, 480)
-    start_camera()
+    # ~ start_camera()
 
 def start_scan(): 
     camera.stop_preview()
     camera.close()
     
-    steps_x = 10
-    steps_y = 500
-    steps_z = 500
+    # arm
+    x_min = -150
+    x_max = 110
+    positions_x = 6
+    steps_x = round((x_max - x_min) / positions_x)
+    print('steps_x = ' + str(steps_x))
+
+    # turntable
+    y_min = get_motor_pos('y')
+    y_max = y_min + 1600
+    positions_y = 20
+    steps_y = round((y_max - y_min)/positions_y)
+    print('steps_y = ' + str(steps_y))
     
-    y_pos_init = get_motor_pos('y')
-    z_pos_init = get_motor_pos('z')
+    #focus
+    z_min = -2300
+    z_max = 5500
+    positions_z = 50
+    steps_z = round((z_max - z_min)/positions_z)
+    print('steps_z = ' + str(steps_z))
+    
+    x_pos_init = x_min
+    y_pos_init = y_min
+    z_pos_init = z_min
     
     # energize()
-    for x in range(2):
-        for y in range(2):
-            for z in range(2):
+    print('Moving all axes to start positions...')
+    move_motor_to('x', x_min)
+    move_motor_to('y', y_min)
+    move_motor_to('z', z_min)
+    
+    for x in range(positions_x):
+        for y in range(positions_y):
+            for z in range(positions_z):
                 shoot_image_scan(x, y, z)
-              
                 move_motor_by_steps('z', steps_z)  
                 
-                if(z == max(range(2))):
+                if(z == positions_z-1):
                     z += 1
                     shoot_image_scan(x, y, z)
                     
                     move_motor_to('z', z_pos_init) 
             
             move_motor_by_steps('y', steps_y)
-            if(y == max(range(2))): 
+            if(y == positions_y-1): 
                 y += 1   
-                for z in range(2):
+                for z in range(positions_z):
                     shoot_image_scan(x, y, z)
                   
                     move_motor_by_steps('z', steps_z)  
                     
-                    if(z == max(range(2))):
+                    if(z == positions_z-1):
                         z += 1
                         shoot_image_scan(x, y, z)
                         
@@ -181,29 +204,29 @@ def start_scan():
                 move_motor_to('y', y_pos_init)
         move_motor_by_steps('x', steps_x)
         sleep(1)
-        if(x == max(range(2))):
+        if(x == positions_x):
             x += 1
-            for y in range(2):
-                for z in range(2):
+            for y in range(positions_y):
+                for z in range(positions_z):
                     shoot_image_scan(x, y, z)
                   
                     move_motor_by_steps('z', steps_z)  
                 
-                if(z == max(range(2))):
+                if(z == positions_z-1):
                     z += 1
                     shoot_image_scan(x, y, z)
                     
                     move_motor_to('z', z_pos_init) 
             
                 move_motor_by_steps('y', steps_y)
-                if(y == max(range(2))):  
+                if(y == positions_y-1):  
                     y += 1  
-                    for z in range(2):
+                    for z in range(positions_z):
                         shoot_image_scan(x, y, z)
                       
                         move_motor_by_steps('z', steps_z)  
                         
-                        if(z == max(range(2))):
+                        if(z == positions_z-1):
                             z += 1
                             shoot_image_scan(x, y, z)
                             
@@ -220,8 +243,8 @@ root.title("piscAnt v.0.0.9000")
 root.minsize(width=350, height=70) 
 label = tk.Label(root, text="piscAnt", fg="black", font="Verdana 14 bold") 
 #label.pack()
-shoot = tk.Button(root, text='Take photo',  
-width=15, state='normal', command=lambda: shoot_image_test())
+# ~ shoot = tk.Button(root, text='Take photo',  
+# ~ width=15, state='normal', command=lambda: shoot_image_test())
 energize_b = tk.Button(root,
     text='Energize',
     bg='green',
@@ -251,16 +274,16 @@ lable_focus = tk.Label(
 )
 
 left_sm = tk.Button(root, text='<< turntable left',  
-width=15, state='normal', command=lambda: move_motor_by_steps('y', -100))
+width=15, state='normal', command=lambda: move_motor_by_steps('y', -80))
 
 right_sm = tk.Button(root, text='turntable right >>',  
-width=15, state='normal', command=lambda: move_motor_by_steps('y', +100))
+width=15, state='normal', command=lambda: move_motor_by_steps('y', +80))
 
 left_big = tk.Button(root, text='<< turntable left',  
-width=15, state='normal', command=lambda: move_motor_by_steps('y', -500))
+width=15, state='normal', command=lambda: move_motor_by_steps('y', -320))
 
 right_big = tk.Button(root, text='turntable right >>',  
-width=15, state='normal', command=lambda: move_motor_by_steps('y', +500))
+width=15, state='normal', command=lambda: move_motor_by_steps('y', +320))
 
 arm_left_sm = tk.Button(root, text='<< arm further',  
 width=15, state='normal', command=lambda: move_motor_by_steps('x', +10))
@@ -294,8 +317,8 @@ width=15, state='normal', command=lambda: start_scan())
 r=0
 energize_b.grid(row=r,column=0)
 deenergize_b.grid(row=r,column=1)
-r+=1
-shoot.grid(row=r, column=0, columnspan = 2)
+# ~ r+=1
+# ~ shoot.grid(row=r, column=0, columnspan = 2)
 r+=1
 lable_turntable.grid(row=r, column=0, columnspan = 2)
 r+=1
