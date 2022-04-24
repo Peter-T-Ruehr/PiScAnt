@@ -1,4 +1,4 @@
-# v.0.0.9004
+# v.0.0.9005
 
 from time import sleep
 from time import strftime
@@ -98,78 +98,60 @@ def deenergize():
 def move_motor_to(axis, target):
         
     curr_position = get_motor_pos(axis)
-    # print(axis + '-axis now at ' + str(curr_position))
-    
     by_steps = target - curr_position
-    
     move_motor_by_steps(axis, by_steps)
-    
-    # ~ cm = get_motor_pos(axis)
-    # ~ print(cm)
-    # ~ while(cm != target):
-        # ~ move_motor_by_steps(axis, by_steps)
-        # ~ cm = get_motor_pos(axis)
-        # ~ print(cm)
-        # ~ sleep(5)
-    # sleep shortly to read correct number
     sleep(abs(round(by_steps/2000, 2)))
-    get_motor_ID(axis)
-    print(axis + '-axis now at ' + str(get_motor_pos(axis)))
+    curr_position = get_motor_pos(axis)
+    print(axis + '-axis now at ' + str(curr_position))
+    
+    counter = 1
+    while curr_position != target:
+        counter += 1
+        curr_position = get_motor_pos(axis)
+        by_steps = target - curr_position
+        move_motor_by_steps(axis, by_steps)
+        sleep(abs(round(by_steps/2000, 2)))
+        curr_position = get_motor_pos(axis)
+        print(axis + '-axis now at ' + str(curr_position) + '(' +str(counter) + ')')
 
 def shoot_image_scan(x, y, z):
     # ~ x_pos = get_motor_pos('x')
     # ~ y_pos = get_motor_pos('y')
     # ~ z_pos = get_motor_pos('z')
     sleep(0.5)
-    curr_image_name = './img_02/x_' + str(x) + '_y_' + str(y) + '_z_' + str(z)  + '.jpg'
+    curr_image_name = './Chrysis_sp_01/x_' + str(x) + '_y_' + str(y) + '_z_' + str(z)  + '.jpg'
     # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
     # print('Saving ' + curr_image_name + '...')
-    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
+    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n --ISO 200 --shutter 3000 -sh 0, -co 0, -br 50, -sa 0'
     os.system(cmd)
     
-# ~ def shoot_image_test():
-    # ~ x_pos = get_motor_pos('x')
-    # ~ y_pos = get_motor_pos('y')
-    # ~ z_pos = get_motor_pos('z')
-    # ~ stop_camera()
-    # ~ timestr = strftime("%Y%m%d-%H%M%S")
-    # ~ curr_image_name = './img_02/x_' + timestr + '.jpg'
-    # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
-    # ~ print('Saving ' + curr_image_name + '...')
-    # ~ cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n -ISO 100, -sh 0, -co 0, -br 50, -sa 0'
-    # ~ os.system(cmd)
-    # ~ camera.resolution = (1024, 768)
-    # ~ camera.capture(curr_image_name)
-    # ~ camera.resolution = (640, 480)
-    # ~ start_camera()
-
 def start_scan(): 
     camera.stop_preview()
     camera.close()
     
     # arm
-    x_min = -150
-    x_max = 110
-    positions_x = 5
+    x_min = get_motor_pos('x')
+    x_max = x_min
+    positions_x = 1 # 5
     steps_x = round((x_max - x_min) / positions_x)
     print('steps_x = ' + str(steps_x))
 
     # turntable
-    y_min = 0 # + get_motor_pos('y')
-    y_max = y_min + 1600
-    positions_y = 20
+    y_min = get_motor_pos('y') # get_motor_pos('y') + get_motor_pos('y')
+    y_max = y_min # y_min + 1600
+    positions_y = 1 # 20
     steps_y = round((y_max - y_min)/positions_y)
     print('steps_y = ' + str(steps_y))
     
     #focus
-    z_min = -2300
-    z_max = 5500
-    positions_z = 30
+    z_min = -5500
+    z_max = -1300
+    positions_z = 200
     steps_z = round((z_max - z_min)/positions_z)
     print('steps_z = ' + str(steps_z))
     
-    print('Making ' + str(positions_x*positions_y*(positions_z+5)) + ' photos,')
-    print('resulting in ~' + str((positions_x*positions_y*(positions_z)/1024)) + ' GB.')
+    print('Making ' + str(positions_x*positions_y*(positions_z)) + ' photos,')
+    print('resulting in ~' + str(round(((positions_x*positions_y*positions_z)*4.11024)/1024, 2)) + ' GB.')
     
     x_pos_init = x_min
     y_pos_init = y_min
@@ -178,7 +160,9 @@ def start_scan():
     # energize()
     print('Moving all axes to start positions...')
     move_motor_to('x', x_min)
+    sleep(2)
     move_motor_to('y', y_min)
+    sleep(2)
     move_motor_to('z', z_min)
     sleep(2)
     
@@ -243,13 +227,10 @@ def start_scan():
 
 # GUI
 root = tk.Tk() 
-root.title("piscAnt v.0.0.9000")         
+root.title("piscAnt v.0.0.9004")         
 # Fixing the window size. 
 root.minsize(width=350, height=70) 
 label = tk.Label(root, text="piscAnt", fg="black", font="Verdana 14 bold") 
-#label.pack()
-# ~ shoot = tk.Button(root, text='Take photo',  
-# ~ width=15, state='normal', command=lambda: shoot_image_test())
 energize_b = tk.Button(root,
     text='Energize',
     bg='green',
@@ -278,10 +259,10 @@ lable_focus = tk.Label(
     text='specimen focus', 
 )
 
-left_sm = tk.Button(root, text='<< turntable left',  
+left_sm = tk.Button(root, text='< turntable left',  
 width=15, state='normal', command=lambda: move_motor_by_steps('y', -80))
 
-right_sm = tk.Button(root, text='turntable right >>',  
+right_sm = tk.Button(root, text='turntable right >',  
 width=15, state='normal', command=lambda: move_motor_by_steps('y', +80))
 
 left_big = tk.Button(root, text='<< turntable left',  
@@ -290,10 +271,10 @@ width=15, state='normal', command=lambda: move_motor_by_steps('y', -320))
 right_big = tk.Button(root, text='turntable right >>',  
 width=15, state='normal', command=lambda: move_motor_by_steps('y', +320))
 
-arm_left_sm = tk.Button(root, text='<< arm further',  
+arm_left_sm = tk.Button(root, text='< arm further',  
 width=15, state='normal', command=lambda: move_motor_by_steps('x', +10))
 
-arm_right_sm = tk.Button(root, text='arm closer >>',  
+arm_right_sm = tk.Button(root, text='arm closer >',  
 width=15, state='normal', command=lambda: move_motor_by_steps('x', -10))
 
 arm_left_big = tk.Button(root, text='<< arm further',  
@@ -302,10 +283,10 @@ width=15, state='normal', command=lambda: move_motor_by_steps('x', +50))
 arm_right_big = tk.Button(root, text='arm closer >>',  
 width=15, state='normal', command=lambda: move_motor_by_steps('x', -50))
 
-focus_left_sm = tk.Button(root, text='<< focus closer',  
+focus_left_sm = tk.Button(root, text='< focus closer',  
 width=15, state='normal', command=lambda: move_motor_by_steps('z', +100))
 
-focus_right_sm = tk.Button(root, text='focus further >>',  
+focus_right_sm = tk.Button(root, text='focus further >',  
 width=15, state='normal', command=lambda: move_motor_by_steps('z', -100))
 
 focus_left_big = tk.Button(root, text='<< focus closer',  
