@@ -1,4 +1,4 @@
-# v.0.0.9005
+# v.0.0.9006
 
 from time import sleep
 from time import strftime
@@ -119,10 +119,10 @@ def shoot_image_scan(x, y, z):
     # ~ y_pos = get_motor_pos('y')
     # ~ z_pos = get_motor_pos('z')
     sleep(0.5)
-    curr_image_name = './Chrysis_sp_01/x_' + str(x) + '_y_' + str(y) + '_z_' + str(z)  + '.jpg'
+    curr_image_name = './Chrysis_sp_02/x_' + str(x) + '_y_' + str(y) + '_z_' + str(z)  + '.jpg'
     # curr_image_name = './img_01/x_' + str(x_pos) + '_y_' + str(y_pos) + '_z_' + str(z_pos)  + '.jpg'
     # print('Saving ' + curr_image_name + '...')
-    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n --ISO 200 --shutter 3000 -sh 0, -co 0, -br 50, -sa 0'
+    cmd = 'raspistill -t 1 -o ' + curr_image_name + ' -n --ISO 200 --shutter 3000 -awb off -awbg 2.9,1.5 -sh 0, -co 0, -br 50, -sa 0'
     os.system(cmd)
     
 def start_scan(): 
@@ -130,23 +130,23 @@ def start_scan():
     camera.close()
     
     # arm
-    x_min = get_motor_pos('x')
-    x_max = x_min
-    positions_x = 1 # 5
+    x_min = -120 # get_motor_pos('x')
+    x_max = 120 # x_min
+    positions_x = 5 # 5
     steps_x = round((x_max - x_min) / positions_x)
     print('steps_x = ' + str(steps_x))
 
     # turntable
     y_min = get_motor_pos('y') # get_motor_pos('y') + get_motor_pos('y')
-    y_max = y_min # y_min + 1600
-    positions_y = 1 # 20
+    y_max = y_min + 1600 # y_min + 1600
+    positions_y = 20 # 20
     steps_y = round((y_max - y_min)/positions_y)
     print('steps_y = ' + str(steps_y))
     
     #focus
-    z_min = -5500
-    z_max = -1300
-    positions_z = 200
+    z_min = 4650
+    z_max = 50
+    positions_z = 80
     steps_z = round((z_max - z_min)/positions_z)
     print('steps_z = ' + str(steps_z))
     
@@ -290,10 +290,10 @@ focus_right_sm = tk.Button(root, text='focus further >',
 width=15, state='normal', command=lambda: move_motor_by_steps('z', -100))
 
 focus_left_big = tk.Button(root, text='<< focus closer',  
-width=15, state='normal', command=lambda: move_motor_by_steps('z', +5000))
+width=15, state='normal', command=lambda: move_motor_by_steps('z', +2000))
 
 focus_right_big = tk.Button(root, text='focus further >>',  
-width=15, state='normal', command=lambda: move_motor_by_steps('z', -5000))
+width=15, state='normal', command=lambda: move_motor_by_steps('z', -2000))
 
 start_scan_b = tk.Button(root, text='Start Scan!',  
 width=15, state='normal', command=lambda: start_scan())
