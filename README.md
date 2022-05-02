@@ -16,8 +16,9 @@ Install Raspbian GNU/Linux 11 (bullseye)
 
 add
 
-`# Enable pi HQ camera
-dtoverlay=imx477"`
+`# Enable pi HQ camera`
+
+`dtoverlay=imx477"`
 
 uncomment
 `# dtoverlay=vc4-fkms-v3d`
