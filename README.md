@@ -45,6 +45,9 @@ when 3 tics are connected, it should look like this (with your own TIC driver nu
 ## start Tic Cotnrol Center
 `ticgui`
 
+## install picamerax python package
+`pip install picamerax`
+
 ## some random camera control commands:
 `raspistill -t 1 -o image.jpg -p100,100,300,200`
 
