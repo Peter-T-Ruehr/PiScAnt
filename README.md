@@ -10,6 +10,17 @@ Install Raspbian GNU/Linux 11 (bullseye)
   * Interface Options
   * Legacy Camera: Enable
   * reboot
+  
+## add imx477 support
+`sudo nano /boot/config.txt`
+
+add
+
+`# Enable pi HQ camera
+dtoverlay=imx477"`
+
+uncomment
+`# dtoverlay=vc4-fkms-v3d`
 
 ## download and install pololu tic 500 drivers:
 source: https://www.pololu.com/docs/0J71/all#1.2
