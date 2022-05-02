@@ -9,14 +9,17 @@ Install Raspbian GNU/Linux 11 (bullseye)
 `sudo raspi-config`
   * Interface Options
   * Legacy Camera: Enable
-`reboot`
+  * reboot
 
 ## download and install pololu tic 500 drivers:
 source: https://www.pololu.com/docs/0J71/all#1.2
+
 `cd ~/Downloads`
+
 `tar -xvf pololu-tic-*.tar.xz`
 
 `sudo pololu-tic-*/install.sh`
+
 (re-)plug tic
 
 ## check if tics are detectable
