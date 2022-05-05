@@ -1,7 +1,6 @@
 library(filesstrings)
 library(stringr)
 
-# RAW_folder <- "C:/Users/peter/Documents/projects/scAnt/scAnt-master/PR_2097_Phyllium_philippinicum/RAW"
 RAW_folder <- "//blanke-nas-1/PROTOCOLS/scAnt/data/Chrysis_sp_02"
 
 
