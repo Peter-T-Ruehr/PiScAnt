@@ -1,7 +1,9 @@
 # PiscAnt (Pi scAnt)
-Python code to run scAnt setup on Raspberry Pi. This was developed for my own use, so the code may be messy, only comes with limited documentation, and I know of some issues already, but it worls. Feel free to use it, however, and let me know if you have constructive critique.
+Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so the code may be messy, only comes with limited documentation, and I know of some issues already, but it worls. I think it wiuld also be easier to use a Pi Model 4, but that is also more expensive. Feel free to use this code, and let me know if you have constructive critique in the [Discussions](https://github.com/Peter-T-Ruehr/PiscAnt/discussions) or [Issues](https://github.com/Peter-T-Ruehr/PiscAnt/issues) page.
 
-A first model generated with this code and setup is available [here](https://skfb.ly/ourV8).
+CAD files to house the RPi HQ cam on the scAnt will be made available on Thingiverse at some point.
+
+A first model of a praying mantis head generated with this code and setup is available [here](https://skfb.ly/ourV8).
 
 The the scAnt author's original code and documentation are available [here](https://github.com/evo-biomech/scAnt), CAD files [here](https://www.thingiverse.com/thing:4694713), and the related publication [here](https://peerj.com/articles/11155/).
 
