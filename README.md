@@ -46,11 +46,9 @@ source: https://www.pololu.com/docs/0J71/all#1.2
 
 when 3 tics are connected, it should look like this (with your own TIC driver numbers):
 
-`00363443,         Tic T500 Stepper Motor Controller     
-
-00338490,         Tic T500 Stepper Motor Controller   
-
-00374283,         Tic T500 Stepper Motor Controller`
+`00363443,         Tic T500 Stepper Motor Controller`
+`00338490,         Tic T500 Stepper Motor Controller`
+`00374283,         Tic T500 Stepper Motor Controller`
 
 ## start Tic Cotnrol Center
 `ticgui`
