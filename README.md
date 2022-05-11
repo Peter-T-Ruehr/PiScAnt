@@ -11,7 +11,7 @@ The scAnt author`s original code and documentation are available [here](https://
 ## Raspbian
 Install Raspbian GNU/Linux 11 (bullseye)
 
-## Enable legacy camera:
+## Enable legacy camera
 `sudo raspi-config`
   * Interface Options
   * Legacy Camera: Enable
@@ -23,6 +23,7 @@ Install Raspbian GNU/Linux 11 (bullseye)
 add
 
 `# Enable pi HQ camera`
+
 `dtoverlay=imx477`
 
 out-comment
@@ -30,7 +31,7 @@ out-comment
 
 See below for some test commands to see if camera works.
 
-## download and install pololu tic 500 drivers:
+## download and install pololu tic 500 drivers
 source: https://www.pololu.com/docs/0J71/all#1.2
 
 `cd ~/Downloads`
@@ -58,7 +59,7 @@ when 3 tics are connected, it should look like this (with your own TIC driver nu
 ## install picamerax python package
 `pip install picamerax`
 
-## some random camera control commands:
+## some random camera control commands
 `raspistill -t 1 -o image.jpg -p100,100,300,200`
 
 `raspistill -t 1 -o image.jpg -n`
