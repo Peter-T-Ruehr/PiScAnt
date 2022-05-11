@@ -1,5 +1,7 @@
 # PiscAnt (Pi scAnt)
-Python code to run scAnt setup on Raspberry Pi. This was developed for my own use, so the code may be messy and only comes with limited documentation. Feel free to use it, however, and let me know if you have constructive critique.
+Python code to run scAnt setup on Raspberry Pi. This was developed for my own use, so the code may be messy, only comes with limited documentation, and I know of some issues already, but it worls. Feel free to use it, however, and let me know if you have constructive critique.
+
+A first model generated with this code and setup is available [here](https://skfb.ly/ourV8).
 
 The the scAnt author's original code and documentation are available [here](https://github.com/evo-biomech/scAnt), CAD files [here](https://www.thingiverse.com/thing:4694713), and the related publication [here](https://peerj.com/articles/11155/).
 
