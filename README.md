@@ -5,7 +5,7 @@ CAD files to house the RPi HQ cam on the scAnt will be made available on Thingiv
 
 A first model of a praying mantis head generated with this code and setup is available [here](https://skfb.ly/ourV8).
 
-The the scAnt author's original code and documentation are available [here](https://github.com/evo-biomech/scAnt), CAD files [here](https://www.thingiverse.com/thing:4694713), and the related publication [here](https://peerj.com/articles/11155/).
+The scAnt author's original code and documentation are available [here](https://github.com/evo-biomech/scAnt), CAD files [here](https://www.thingiverse.com/thing:4694713), and the related publication [here](https://peerj.com/articles/11155/).
 
 # Installation
 ## Raspbian
