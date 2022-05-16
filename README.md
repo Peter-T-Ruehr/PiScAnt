@@ -1,9 +1,11 @@
 # PiscAnt (Pi scAnt)
-Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so the code may be messy, only comes with limited documentation, and I know of one [issue](https://github.com/Peter-T-Ruehr/PiscAnt/issues) already, but it works for me. I think it would also be easier to use a Pi Model 4, but that is also more expensive and I had none at hand. Feel free to use this code, and let me know if you have constructive critique in the [Discussions](https://github.com/Peter-T-Ruehr/PiscAnt/discussions) or [Issues](https://github.com/Peter-T-Ruehr/PiscAnt/issues) page.
+Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so the code comes with limited documentation. I know of one [issue](https://github.com/Peter-T-Ruehr/PiscAnt/issues) already, but it works for me. Things might have been easier when using an RPi Model 4 for this project, but that is also more expensive and I had none at hand.
 
-CAD files to house the RPi HQ cam on the scAnt will be made available on Thingiverse at some point.
+Feel free to use this code and its [Discussions](https://github.com/Peter-T-Ruehr/PiscAnt/discussions) and [Issues](https://github.com/Peter-T-Ruehr/PiscAnt/issues) pages.
 
-A first model of a praying mantis head generated with this code and setup is available [here](https://skfb.ly/ourV8).
+CAD files to house the RPi HQ cam on the scAnt will be made available on [Thingiverse](https://www.thingiverse.com/) at some point.
+
+A first model of a praying mantis head generated from the photos taken with this code and setup is available [here](https://skfb.ly/ourV8).
 
 The scAnt author`s original code and documentation are available [here](https://github.com/evo-biomech/scAnt), CAD files [here](https://www.thingiverse.com/thing:4694713), and the related publication [here](https://peerj.com/articles/11155/).
 
@@ -40,12 +42,12 @@ source: https://www.pololu.com/docs/0J71/all#1.2
 
 `sudo pololu-tic-*/install.sh`
 
-(re-)plug tic
+(re-)plug tics
 
 ## check if tics are detectable
 `ticcmd --list`
 
-when 3 tics are connected, it should look like this (with your own TIC driver numbers):
+when 3 tics are connected, it should look like this (with your own tic driver numbers):
 
 `0036xxx3,         Tic T500 Stepper Motor Controller`
 
@@ -59,7 +61,10 @@ when 3 tics are connected, it should look like this (with your own TIC driver nu
 ## install picamerax python package
 `pip install picamerax`
 
-## some random camera control commands
+## some random camera control commands to test camera and find good settings
+With help from
+https://www.arducam.com/docs/cameras-for-raspberry-pi/native-raspberry-pi-cameras/native-camera-commands-raspistillraspivid/
+
 `raspistill -t 1 -o image.jpg -p100,100,300,200`
 
 `raspistill -t 1 -o image.jpg -n`
@@ -69,7 +74,3 @@ when 3 tics are connected, it should look like this (with your own TIC driver nu
 `raspistill -t 0 -k -o image.jpg -p 30,30,800,600 --ISO 200 --shutter 3000 -sh 0 -co 0 -br 50 -sa 0`
 
 `raspistill -t 0 -k -o image.jpg -p 30,30,800,600 --ISO 200 --shutter 3000 -sh 0 -co 0 -br 50 -sa 0 -awb off -awbg 2.9,1.5`
-
-With help from
-https://www.arducam.com/docs/cameras-for-raspberry-pi/native-raspberry-pi-cameras/native-camera-commands-raspistillraspivid/
-
