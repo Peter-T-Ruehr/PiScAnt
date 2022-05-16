@@ -1,5 +1,5 @@
 # PiscAnt (Pi scAnt)
-Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so the code may be messy, only comes with limited documentation, and I know of some issues already, but it works for me. I think it would also be easier to use a Pi Model 4, but that is also more expensive. Feel free to use this code, and let me know if you have constructive critique in the [Discussions](https://github.com/Peter-T-Ruehr/PiscAnt/discussions) or [Issues](https://github.com/Peter-T-Ruehr/PiscAnt/issues) page.
+Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so the code may be messy, only comes with limited documentation, and I know of one [issue](https://github.com/Peter-T-Ruehr/PiscAnt/issues) already, but it works for me. I think it would also be easier to use a Pi Model 4, but that is also more expensive and I had none at hand. Feel free to use this code, and let me know if you have constructive critique in the [Discussions](https://github.com/Peter-T-Ruehr/PiscAnt/discussions) or [Issues](https://github.com/Peter-T-Ruehr/PiscAnt/issues) page.
 
 CAD files to house the RPi HQ cam on the scAnt will be made available on Thingiverse at some point.
 
