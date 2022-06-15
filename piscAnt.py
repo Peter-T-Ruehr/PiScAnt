@@ -1,4 +1,4 @@
-# v.0.0.9006
+# v.0.0.9007
 
 from time import sleep
 from time import strftime
@@ -8,6 +8,23 @@ import subprocess
 import tkinter as tk 
 from tkinter import messagebox
 
+
+# range definitions
+# ARM (x)
+x_min = -120 # get_motor_pos('x')
+x_max = 120 # x_min
+positions_x = 5 # 5
+
+# SPECIMEN TURNTABLE (y)
+y_min = get_motor_pos('y') # get_motor_pos('y') + get_motor_pos('y')
+y_max = y_min + 1600 # y_min + 1600
+positions_y = 20 # 20
+
+# FOCUS (z)
+z_min = 4650
+z_max = 50
+positions_z = 80
+    
 def start_camera():
     camera = PiCamera()
     camera.resolution = (640, 480)
@@ -130,29 +147,27 @@ def start_scan():
     camera.close()
     
     # arm
-    x_min = -120 # get_motor_pos('x')
-    x_max = 120 # x_min
-    positions_x = 5 # 5
     steps_x = round((x_max - x_min) / positions_x)
     print('steps_x = ' + str(steps_x))
 
     # turntable
-    y_min = get_motor_pos('y') # get_motor_pos('y') + get_motor_pos('y')
-    y_max = y_min + 1600 # y_min + 1600
-    positions_y = 20 # 20
     steps_y = round((y_max - y_min)/positions_y)
     print('steps_y = ' + str(steps_y))
     
     #focus
-    z_min = 4650
-    z_max = 50
-    positions_z = 80
     steps_z = round((z_max - z_min)/positions_z)
     print('steps_z = ' + str(steps_z))
     
     print('Making ' + str(positions_x*positions_y*(positions_z)) + ' photos,')
     print('resulting in ~' + str(round(((positions_x*positions_y*positions_z)*4.11024)/1024, 2)) + ' GB.')
     
+    # subtract one from each positions value because at each second last step 
+    # an additional action is taken
+    positions_x -= 1
+    positions_y -= 1
+    positions_z -= 1
+
+    # define initial motor positions
     x_pos_init = x_min
     y_pos_init = y_min
     z_pos_init = z_min
@@ -160,11 +175,11 @@ def start_scan():
     # energize()
     print('Moving all axes to start positions...')
     move_motor_to('x', x_min)
-    sleep(2)
+    # sleep(2)
     move_motor_to('y', y_min)
-    sleep(2)
+    # sleep(2)
     move_motor_to('z', z_min)
-    sleep(2)
+    # sleep(2)
     
     for x in range(positions_x):
         for y in range(positions_y):
