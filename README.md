@@ -55,7 +55,7 @@ when 3 tics are connected, it should look like this (with your own tic driver nu
 
 `0037xxx3,         Tic T500 Stepper Motor Controller`
 
-## start Tic Cotnrol Center
+## start Tic Control Center
 `ticgui`
 
 ## install picamerax python package
