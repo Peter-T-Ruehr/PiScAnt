@@ -1,5 +1,5 @@
 # PiscAnt (Pi scAnt)
-Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so the code comes with limited documentation. 
+Python code to run scAnt setup on Raspberry Pi Model 3+. This was developed for my own use, so code documentation here will appear over time. 
 
 Feel free to use this code and its [Discussions](https://github.com/Peter-T-Ruehr/PiscAnt/discussions) and [Issues](https://github.com/Peter-T-Ruehr/PiscAnt/issues) pages.
 
