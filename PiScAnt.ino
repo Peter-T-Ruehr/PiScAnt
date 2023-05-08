@@ -2,27 +2,27 @@
 #define X_DIR_PIN 55
 #define X_ENABLE_PIN 38
 #define X_MIN_PIN 3
-#define X_MAX_PIN 2
 
 #define Y_STEP_PIN 60
 #define Y_DIR_PIN 61
 #define Y_ENABLE_PIN 56
 #define Y_MIN_PIN 14
-#define Y_MAX_PIN 15
 
 #define Z_STEP_PIN 46
 #define Z_DIR_PIN 48
 #define Z_ENABLE_PIN 62
 #define Z_MIN_PIN 18
-#define Z_MAX_PIN 19
+// #define Z_MAX_PIN 19
 
 #define E_STEP_PIN 26
 #define E_DIR_PIN 28
 #define E_ENABLE_PIN 24
+#define E_MIN_PIN 2
 
 #define Q_STEP_PIN 36
 #define Q_DIR_PIN 34
 #define Q_ENABLE_PIN 30
+#define Q_MIN_PIN 15
 
 #define SDPOWER -1
 #define SDSS 53
@@ -48,28 +48,28 @@ void setup() {
   pinMode(X_STEP_PIN, OUTPUT);
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(X_ENABLE_PIN, OUTPUT);
-  pinMode(X_MIN_PIN, INPUT);
-  pinMode(X_MAX_PIN, INPUT);
+  // pinMode(X_MIN_PIN, INPUT); // not needed
 
   pinMode(Y_STEP_PIN, OUTPUT);
   pinMode(Y_DIR_PIN, OUTPUT);
   pinMode(Y_ENABLE_PIN, OUTPUT);
-  pinMode(Y_MIN_PIN, INPUT);
-  pinMode(Y_MAX_PIN, INPUT);
+  pinMode(Y_MIN_PIN, INPUT_PULLUP);
 
   pinMode(Z_STEP_PIN, OUTPUT);
   pinMode(Z_DIR_PIN, OUTPUT);
   pinMode(Z_ENABLE_PIN, OUTPUT);
-  pinMode(Z_MIN_PIN, INPUT);
-  pinMode(Z_MAX_PIN, INPUT);
+  pinMode(Z_MIN_PIN, INPUT_PULLUP);
+  // pinMode(Z_MAX_PIN, INPUT_PULLUP); // not needed
 
   pinMode(E_STEP_PIN, OUTPUT);
   pinMode(E_DIR_PIN, OUTPUT);
   pinMode(E_ENABLE_PIN, OUTPUT);
+  pinMode(E_MIN_PIN, INPUT_PULLUP); // used to be X_MAX
 
   pinMode(Q_STEP_PIN, OUTPUT);
   pinMode(Q_DIR_PIN, OUTPUT);
   pinMode(Q_ENABLE_PIN, OUTPUT);
+  pinMode(Q_MIN_PIN, INPUT_PULLUP); // used to be Y_MAX
 
   // disable all motors
   digitalWrite(X_ENABLE_PIN, HIGH);
@@ -96,6 +96,9 @@ int MIN_PIN;
 int MAX_PIN;
 
 void loop() {
+  //Serial.println(digitalRead(Z_MIN_PIN));
+  //delay(10);
+  
   if (Serial.available() > 0) {
     read_serial();
 
@@ -120,17 +123,19 @@ void loop() {
 }
 
 
+
+
 void home_axis() {
   Serial.print("Homing ");
   Serial.print(device);
   Serial.println(" axis...");
 
   define_motor_pins();
-  
+
   // enable motor
   digitalWrite(ENABLE_PIN, LOW);
   delayMicroseconds(100);
-  
+
   // home towards endstop direction
   digitalWrite(DIR_PIN, HIGH);  // left
 
@@ -172,7 +177,7 @@ void read_serial() {
 // move axis
 void move_motor() {
   define_motor_pins();
-  
+
   // enable motor
   digitalWrite(ENABLE_PIN, LOW);
   delayMicroseconds(100);
@@ -225,33 +230,32 @@ void light_switch() {
 
 
 // MOTOR PIN DEFINITIONS
-void define_motor_pins(){
+void define_motor_pins() {
   // find wich motor to move
   if (device == "X") {
     STEP_PIN = 54;
     DIR_PIN = 55;
     ENABLE_PIN = 38;
     MIN_PIN = 3;
-    MAX_PIN = 2;
   } else if (device == "Y") {
     STEP_PIN = 60;
     DIR_PIN = 61;
     ENABLE_PIN = 56;
     MIN_PIN = 14;
-    MAX_PIN = 15;
   } else if (device == "Z") {
     STEP_PIN = 46;
     DIR_PIN = 48;
     ENABLE_PIN = 62;
     MIN_PIN = 18;
-    MAX_PIN = 19;
   } else if (device == "E") {
     STEP_PIN = 26;
     DIR_PIN = 28;
     ENABLE_PIN = 24;
+    MIN_PIN = 2;
   } else if (device == "Q") {
     STEP_PIN = 36;
     DIR_PIN = 34;
     ENABLE_PIN = 30;
+    MIN_PIN = 15;
   }
 }
