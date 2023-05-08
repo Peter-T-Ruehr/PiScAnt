@@ -49,7 +49,7 @@ void setup() {
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(X_ENABLE_PIN, OUTPUT);
   pinMode(X_MIN_PIN, INPUT);
-  pinMode(Y_MAX_PIN, INPUT);
+  pinMode(X_MAX_PIN, INPUT);
 
   pinMode(Y_STEP_PIN, OUTPUT);
   pinMode(Y_DIR_PIN, OUTPUT);
@@ -82,54 +82,29 @@ void setup() {
   Serial.println("Arduino is ready to receive on Baud 9600...");
 }
 
-// X <- test settings
-float pitch_X = 4;          // mm per revolution
-float microstepping_X = 2;  // 1 0 0
-float steps_per_rev_X = 200 * microstepping_X;
-
-// Y <- not yet set
-float pitch_Y = 4;          // mm per revolution
-float microstepping_Y = 8;  // 1 1 0
-float steps_per_rev_Y = 200 * microstepping_Y;
-
-// Z
-float pitch_Z = 4;          // mm per revolution
-float microstepping_Z = 1;  // 0 0 0
-float steps_per_rev_Z = 200 * microstepping_Z;
-
-int overall_X;
-int overall_Y;
-int overall_Z;
-
-
-float steps;
+int steps;
 
 // Serial inputs
 String device;
 String command;
-float number;
 int status;
 
+int STEP_PIN;
+int DIR_PIN;
+int ENABLE_PIN;
+int MIN_PIN;
+int MAX_PIN;
 
 void loop() {
-
   if (Serial.available() > 0) {
     read_serial();
 
-    // X_R_4
-    if (device == "X") {
-      move_x();
+    // X_R_100
+    // Y_R_100
+    // Z_R_100
+    if (device == "X" | device == "Y" | device == "Z") {
+      move_motor();
     }
-
-    // Y_R_4
-    if (device == "Y") {
-    }
-
-    // Z_R_4
-    if (device == "Z") {
-      move_z();
-    }
-
 
     // light_x_0
     // light_x_1
@@ -137,164 +112,107 @@ void loop() {
       light_switch();
     }
 
-    // limit_x_0
-    if (device == "Z" && command == "home") {
-      home_Z();
+    // Z_home_0
+    if (command == "home") {
+      home_axis();
     }
   }
 }
 
-void home_Z() {
-  Serial.println("Homing Z axis...");
-  while (digitalRead(Z_MAX_PIN) == 0) {
-    number = 0.1;
-    move_x();
+
+void home_axis() {
+  Serial.print("Homing ");
+  Serial.print(device);
+  Serial.println(" axis...");
+
+  define_motor_pins();
+  
+  // enable motor
+  digitalWrite(ENABLE_PIN, LOW);
+  delayMicroseconds(100);
+  
+  // home towards endstop direction
+  digitalWrite(DIR_PIN, HIGH);  // left
+
+  steps = 0;
+
+  // run motor
+  while (1) {
+    if (digitalRead(MIN_PIN) == 0) {
+      break;
+    }
+    digitalWrite(STEP_PIN, HIGH);
+    delayMicroseconds(1000);
+    digitalWrite(STEP_PIN, LOW);
+    delayMicroseconds(1000);
+    steps++;
   }
-  // while (val != 0) {
-  //   Serial.println("pressed");
-  //   delay(0.5);
-  // }
-  // while (val == 0) {
-  //   Serial.println("not pressed");
-  //   delay(0.5);
-  // }
+
+  // disable motor
+  // digitalWrite(ENABLE_PIN, HIGH);
+
+  // message end of action
+  Serial.println(steps);
 }
 
-// void test_limit_Z() {
-//   while (1) {
-//     float val = digitalRead(Z_MAX_PIN);
-//     Serial.println(val);
-//     delay(500);
-//   }
-//   // while (val != 0) {
-//   //   Serial.println("pressed");
-//   //   delay(0.5);
-//   // }
-//   // while (val == 0) {
-//   //   Serial.println("not pressed");
-//   //   delay(0.5);
-//   // }
-// }
 
+// read serial input
 void read_serial() {
   device = Serial.readStringUntil('_');  // writes in the string all the inputs till a comma
   Serial.read();
   command = Serial.readStringUntil('_');
   Serial.read();
   String number_str = Serial.readStringUntil('\n');  // writes in the string all the inputs till the end of line character
-  number = number_str.toFloat();
-
-  Serial.println("You sent me: ");
-  Serial.println(device);
-  Serial.println(command);
-  Serial.println(number);
+  steps = number_str.toFloat();
 }
+
+
 
 // MOTOR COMMANDS
-void move_x() {
+// move axis
+void move_motor() {
+  define_motor_pins();
+  
+  // enable motor
+  digitalWrite(ENABLE_PIN, LOW);
+  delayMicroseconds(100);
+
   // check if right or left movement i desired
   if (command == "L") {
-    digitalWrite(X_DIR_PIN, HIGH);  // left
-    overall_Z = overall_X - steps;
+    digitalWrite(DIR_PIN, HIGH);  // left
   } else if (command == "R") {
-    digitalWrite(X_DIR_PIN, LOW);  // right
-    overall_Z = overall_X + steps;
+    digitalWrite(DIR_PIN, LOW);  // right
   }
-
-  // calculate how many steps are needed to rech the distances in mm (=number)
-  steps = number / pitch_X * steps_per_rev_X;
-
-
-  // print steps
-  Serial.print("number: ");
-  Serial.println(number);
-  Serial.print("pitch: ");
-  Serial.println(pitch_X);
-  Serial.print("steps: ");
-  Serial.println(steps);
-  steps = round(steps);
-  Serial.print("steps rounded: ");
-  Serial.println(steps);
-
-  // enable motor
-  digitalWrite(X_ENABLE_PIN, LOW);
-  delayMicroseconds(100);
 
   // run motor
   for (int step = 1; step <= steps; step++) {
-    if (digitalRead(X_MIN_PIN) == 1) {
-      digitalWrite(X_STEP_PIN, HIGH);
+    if (digitalRead(MIN_PIN) == 1) {
+      digitalWrite(STEP_PIN, HIGH);
       delayMicroseconds(1000);
-      digitalWrite(X_STEP_PIN, LOW);
+      digitalWrite(STEP_PIN, LOW);
       delayMicroseconds(1000);
       status = 0;
     } else {
-      Serial.println("limit X reached.");
+      Serial.print("limit ");
+      Serial.print(device);
+      Serial.println(" reached.");
       status = 1;
       break;
     }
   }
 
   // disable motor
-  digitalWrite(X_ENABLE_PIN, HIGH);
+  // digitalWrite(ENABLE_PIN, HIGH);
 
   // message end of action
   Serial.println(status);
 }
 
-void move_z() {
-  // check if right or left movement i desired
-  if (command == "L") {
-    digitalWrite(Z_DIR_PIN, HIGH);  // left
-    overall_Z = overall_Z - steps;
-  } else if (command == "R") {
-    digitalWrite(Z_DIR_PIN, LOW);  // right
-    overall_Z = overall_Z - steps;
-  }
 
-  // calculate how many steps are needed to rech the distances in mm (=number)
-  steps = number / pitch_Z * steps_per_rev_Z;
-
-  // print steps
-  Serial.print("number: ");
-  Serial.println(number);
-  Serial.print("pitch: ");
-  Serial.println(pitch_Z);
-  Serial.print("steps: ");
-  Serial.println(steps);
-  steps = round(steps);
-  Serial.print("steps rounded: ");
-  Serial.println(steps);
-
-  // enable motor
-  digitalWrite(Z_ENABLE_PIN, LOW);
-  delayMicroseconds(100);
-
-  // run motor
-  for (int step = 1; step <= steps; step++) {
-    if (digitalRead(Z_MIN_PIN) == 1) {
-      digitalWrite(Z_STEP_PIN, HIGH);
-      delayMicroseconds(1000);
-      digitalWrite(Z_STEP_PIN, LOW);
-      delayMicroseconds(1000);
-      status = 0;
-    } else {
-      Serial.println("limit Z reached.");
-      status = 1;
-      break;
-    }
-  }
-
-  // disable motor
-  digitalWrite(Z_ENABLE_PIN, HIGH);
-
-  // message end of action
-  Serial.println(status);
-}
 
 // LIGHT COMMANDS
 void light_switch() {
-  if (number == 1) {
+  if (steps == 1) {
     Serial.println("Light on.");
     digitalWrite(LIGHT_PIN, HIGH);
   } else {
@@ -302,4 +220,38 @@ void light_switch() {
     Serial.println("Light off.");
   }
   Serial.println(0);
+}
+
+
+
+// MOTOR PIN DEFINITIONS
+void define_motor_pins(){
+  // find wich motor to move
+  if (device == "X") {
+    STEP_PIN = 54;
+    DIR_PIN = 55;
+    ENABLE_PIN = 38;
+    MIN_PIN = 3;
+    MAX_PIN = 2;
+  } else if (device == "Y") {
+    STEP_PIN = 60;
+    DIR_PIN = 61;
+    ENABLE_PIN = 56;
+    MIN_PIN = 14;
+    MAX_PIN = 15;
+  } else if (device == "Z") {
+    STEP_PIN = 46;
+    DIR_PIN = 48;
+    ENABLE_PIN = 62;
+    MIN_PIN = 18;
+    MAX_PIN = 19;
+  } else if (device == "E") {
+    STEP_PIN = 26;
+    DIR_PIN = 28;
+    ENABLE_PIN = 24;
+  } else if (device == "Q") {
+    STEP_PIN = 36;
+    DIR_PIN = 34;
+    ENABLE_PIN = 30;
+  }
 }
