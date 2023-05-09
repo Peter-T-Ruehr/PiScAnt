@@ -78,8 +78,8 @@ void setup() {
   digitalWrite(E_ENABLE_PIN, HIGH);
   digitalWrite(Q_ENABLE_PIN, HIGH);
 
-  Serial.begin(9600);
-  Serial.println("Arduino is ready to receive on Baud 9600...");
+  Serial.begin(115200);
+  Serial.println("Arduino is ready to receive on Baud 115200...");
 }
 
 int steps;
@@ -120,7 +120,7 @@ void loop() {
       light_switch();
     }
 
-    // Z_home_X
+    // Z_home_x
     if (command == "home") {
       home_axis();
     }
@@ -130,6 +130,7 @@ void loop() {
       disable_motors();
     }
   }
+  Serial.flush();
 }
 
 
@@ -144,7 +145,7 @@ void home_axis() {
 
   // enable motor
   digitalWrite(ENABLE_PIN, LOW);
-  delayMicroseconds(100);
+  // delayMicroseconds(100);
 
   // home towards endstop direction
   digitalWrite(DIR_PIN, HIGH);  // left
@@ -168,7 +169,8 @@ void home_axis() {
   // digitalWrite(ENABLE_PIN, HIGH);
 
   // message end of action
-  Serial.println(steps);
+  //Serial.println(steps);
+  Serial.println(2); // 2 because mover_motor() already prints out 0 or 1
 }
 
 
@@ -191,7 +193,7 @@ void move_motor() {
 
   // enable motor
   digitalWrite(ENABLE_PIN, LOW);
-  delayMicroseconds(100);
+  delayMicroseconds(1000);
 
   // check if right or left movement i desired
   if (command == "L") {
@@ -209,9 +211,9 @@ void move_motor() {
       delayMicroseconds(1000);
       status = 0;
     } else {
-      Serial.print("limit ");
-      Serial.print(device);
-      Serial.println(" reached.");
+      // Serial.print("limit ");
+      // Serial.print(device);
+      // Serial.println(" reached.");
       status = 1;
       break;
     }
@@ -254,31 +256,31 @@ void define_motor_pins() {
 
   // find wich motor to move
   if (device == "X") {
-    Serial.println("motor: X");
+    // Serial.println("motor: X");
     STEP_PIN = 54;
     DIR_PIN = 55;
     ENABLE_PIN = 38;
     MIN_PIN = 3;
   } else if (device == "Y") {
-    Serial.println("motor: Y");
+    // Serial.println("motor: Y");
     STEP_PIN = 60;
     DIR_PIN = 61;
     ENABLE_PIN = 56;
     MIN_PIN = 14;
   } else if (device == "Z") {
-    Serial.println("motor: Z");
+    // Serial.println("motor: Z");
     STEP_PIN = 46;
     DIR_PIN = 48;
     ENABLE_PIN = 62;
     MIN_PIN = 18;
   } else if (device == "E") {
-    Serial.println("motor: E");
+    // Serial.println("motor: E");
     STEP_PIN = 26;
     DIR_PIN = 28;
     ENABLE_PIN = 24;
     MIN_PIN = 2;
   } else if (device == "Q") {
-    Serial.println("motor: Q");
+    // Serial.println("motor: Q");
     STEP_PIN = 36;
     DIR_PIN = 34;
     ENABLE_PIN = 30;
