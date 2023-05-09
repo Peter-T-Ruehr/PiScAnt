@@ -48,7 +48,7 @@ void setup() {
   pinMode(X_STEP_PIN, OUTPUT);
   pinMode(X_DIR_PIN, OUTPUT);
   pinMode(X_ENABLE_PIN, OUTPUT);
-  // pinMode(X_MIN_PIN, INPUT); // not needed
+  pinMode(X_MIN_PIN, INPUT_PULLUP); // not needed
 
   pinMode(Y_STEP_PIN, OUTPUT);
   pinMode(Y_DIR_PIN, OUTPUT);
@@ -87,7 +87,9 @@ int steps;
 // Serial inputs
 String device;
 String command;
-int status;
+byte status;
+byte pressed = 1; // the pressed state pullup value for endstops when they're pressed
+byte not_pressed = 0; // the non-pressed state 
 
 int STEP_PIN;
 int DIR_PIN;
@@ -95,17 +97,20 @@ int ENABLE_PIN;
 int MIN_PIN;
 int MAX_PIN;
 
+
 void loop() {
-  //Serial.println(digitalRead(Z_MIN_PIN));
-  //delay(10);
-  
+  // Serial.println(digitalRead(Y_MIN_PIN));
+  // delay(10);
+
   if (Serial.available() > 0) {
     read_serial();
 
     // X_R_100
     // Y_R_100
     // Z_R_100
-    if (device == "X" | device == "Y" | device == "Z") {
+    // E_R_100
+    // Q_R_100
+    if (device == "X" | device == "Y" | device == "Z" | device == "E" | device == "Q") {
       move_motor();
     }
 
@@ -115,9 +120,14 @@ void loop() {
       light_switch();
     }
 
-    // Z_home_0
+    // Z_home_X
     if (command == "home") {
       home_axis();
+    }
+
+    // x_disable_x
+    if (command == "disable") {
+      disable_motors();
     }
   }
 }
@@ -143,7 +153,8 @@ void home_axis() {
 
   // run motor
   while (1) {
-    if (digitalRead(MIN_PIN) == 0) {
+    if (digitalRead(MIN_PIN) == pressed) {
+      Serial.println("Home reached.");
       break;
     }
     digitalWrite(STEP_PIN, HIGH);
@@ -191,7 +202,7 @@ void move_motor() {
 
   // run motor
   for (int step = 1; step <= steps; step++) {
-    if (digitalRead(MIN_PIN) == 1) {
+    if (digitalRead(MIN_PIN) == not_pressed) {
       digitalWrite(STEP_PIN, HIGH);
       delayMicroseconds(1000);
       digitalWrite(STEP_PIN, LOW);
@@ -213,7 +224,15 @@ void move_motor() {
   Serial.println(status);
 }
 
-
+void disable_motors() {
+  Serial.println("disabling all motors...");
+  digitalWrite(X_ENABLE_PIN, HIGH);
+  digitalWrite(Y_ENABLE_PIN, HIGH);
+  digitalWrite(Z_ENABLE_PIN, HIGH);
+  digitalWrite(E_ENABLE_PIN, HIGH);
+  digitalWrite(Q_ENABLE_PIN, HIGH);
+  Serial.println(0);
+}
 
 // LIGHT COMMANDS
 void light_switch() {
@@ -231,28 +250,35 @@ void light_switch() {
 
 // MOTOR PIN DEFINITIONS
 void define_motor_pins() {
+  // Serial.println(device);
+
   // find wich motor to move
   if (device == "X") {
+    Serial.println("motor: X");
     STEP_PIN = 54;
     DIR_PIN = 55;
     ENABLE_PIN = 38;
     MIN_PIN = 3;
   } else if (device == "Y") {
+    Serial.println("motor: Y");
     STEP_PIN = 60;
     DIR_PIN = 61;
     ENABLE_PIN = 56;
     MIN_PIN = 14;
   } else if (device == "Z") {
+    Serial.println("motor: Z");
     STEP_PIN = 46;
     DIR_PIN = 48;
     ENABLE_PIN = 62;
     MIN_PIN = 18;
   } else if (device == "E") {
+    Serial.println("motor: E");
     STEP_PIN = 26;
     DIR_PIN = 28;
     ENABLE_PIN = 24;
     MIN_PIN = 2;
   } else if (device == "Q") {
+    Serial.println("motor: Q");
     STEP_PIN = 36;
     DIR_PIN = 34;
     ENABLE_PIN = 30;
