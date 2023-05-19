@@ -38,6 +38,9 @@
 #define TEMP_0_PIN 13  // ANALOG NUMBERING
 #define TEMP_1_PIN 14  // ANALOG NUMBERING
 
+// Calculate based on max input size expected for one command
+#define INPUT_SIZE 15
+
 void setup() {
 
   pinMode(FAN_PIN, OUTPUT);
@@ -71,15 +74,16 @@ void setup() {
   pinMode(Q_ENABLE_PIN, OUTPUT);
   pinMode(Q_MIN_PIN, INPUT_PULLUP); // used to be Y_MAX
 
-  // disable all motors
+  // deactivate all motors
   digitalWrite(X_ENABLE_PIN, HIGH);
   digitalWrite(Y_ENABLE_PIN, HIGH);
   digitalWrite(Z_ENABLE_PIN, HIGH);
   digitalWrite(E_ENABLE_PIN, HIGH);
   digitalWrite(Q_ENABLE_PIN, HIGH);
 
-  Serial.begin(115200);
-  Serial.println("Arduino is ready to receive on Baud 115200...");
+  Serial.begin(9600);
+  delay(1000);
+  Serial.println("Arduino is ready to receive on Baud 9600...");
 }
 
 int steps;
@@ -99,9 +103,6 @@ int MAX_PIN;
 
 
 void loop() {
-  // Serial.println(digitalRead(Y_MIN_PIN));
-  // delay(10);
-
   if (Serial.available() > 0) {
     read_serial();
 
@@ -125,15 +126,17 @@ void loop() {
       home_axis();
     }
 
-    // x_disable_x
-    if (command == "disable") {
-      disable_motors();
+    // x_deactivate_x
+    if (command == "deactivate") {
+      deactivate_motors();
+    }
+
+    // x_activate_x
+    if (command == "activate") {
+      activate_motors();
     }
   }
-  Serial.flush();
 }
-
-
 
 
 void home_axis() {
@@ -165,7 +168,7 @@ void home_axis() {
     steps++;
   }
 
-  // disable motor
+  // deactivate motor
   // digitalWrite(ENABLE_PIN, HIGH);
 
   // message end of action
@@ -173,18 +176,35 @@ void home_axis() {
   Serial.println(2); // 2 because mover_motor() already prints out 0 or 1
 }
 
-
 // read serial input
 void read_serial() {
-  device = Serial.readStringUntil('_');  // writes in the string all the inputs till a comma
-  Serial.read();
-  command = Serial.readStringUntil('_');
-  Serial.read();
-  String number_str = Serial.readStringUntil('\n');  // writes in the string all the inputs till the end of line character
+  String input = Serial.readStringUntil('\n');
+  
+  device = getValue(input, '_', 0);
+  command = getValue(input, '_', 1);
+  String number_str = getValue(input, '_', 2);
   steps = number_str.toFloat();
+  
+  Serial.println("device: " + device);
+  Serial.println("command: " + command);
+  Serial.println("steps: " + steps);
 }
 
+String getValue(String data, char separator, int index)
+{
+    int found = 0;
+    int strIndex[] = { 0, -1 };
+    int maxIndex = data.length() - 1;
 
+    for (int i = 0; i <= maxIndex && found <= index; i++) {
+        if (data.charAt(i) == separator || i == maxIndex) {
+            found++;
+            strIndex[0] = strIndex[1] + 1;
+            strIndex[1] = (i == maxIndex) ? i+1 : i;
+        }
+    }
+    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
 
 // MOTOR COMMANDS
 // move axis
@@ -219,20 +239,30 @@ void move_motor() {
     }
   }
 
-  // disable motor
+  // deactivate motor
   // digitalWrite(ENABLE_PIN, HIGH);
 
   // message end of action
   Serial.println(status);
 }
 
-void disable_motors() {
-  Serial.println("disabling all motors...");
+void deactivate_motors() {
+  Serial.println("deactivating all motors...");
   digitalWrite(X_ENABLE_PIN, HIGH);
   digitalWrite(Y_ENABLE_PIN, HIGH);
   digitalWrite(Z_ENABLE_PIN, HIGH);
   digitalWrite(E_ENABLE_PIN, HIGH);
   digitalWrite(Q_ENABLE_PIN, HIGH);
+  Serial.println(0);
+}
+
+void activate_motors() {
+  Serial.println("activating all motors...");
+  digitalWrite(X_ENABLE_PIN, LOW);
+  digitalWrite(Y_ENABLE_PIN, LOW);
+  digitalWrite(Z_ENABLE_PIN, LOW);
+  digitalWrite(E_ENABLE_PIN, LOW);
+  digitalWrite(Q_ENABLE_PIN, LOW);
   Serial.println(0);
 }
 
