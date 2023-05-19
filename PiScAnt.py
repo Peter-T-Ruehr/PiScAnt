@@ -15,7 +15,6 @@ picam2 = Picamera2()
 preview_config = picam2.create_preview_configuration()
 capture_config = picam2.create_still_configuration()
 
-
 microstepping_X = 8
 microstepping_Y = 8
 microstepping_Z = 1
@@ -36,30 +35,6 @@ lead_Q = 0.7 # mm/rev
 steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
 steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
-
-# max_movement_X = 360 # °
-# max_movement_Y = 70 # °
-# max_movement_Z = 150 # mm
-# max_movement_E = 150 # mm
-# max_movement_Q = 150 # mm
-
-# max_steps_X = 360 * steps_per_rev_X
-# max_steps_Y = 70 * steps_per_rev_Y
-# max_steps_Z = 150 * steps_per_mm_Z
-# max_steps_E = 150 * steps_per_mm_E
-# max_steps_Q = 150 * steps_per_mm_Q
-
-# print(steps_per_mm_E)
-# print(steps_per_rev_X)
-# print(steps_per_rev_Y)
-# print(steps_per_mm_Z)
-# print(steps_per_mm_Q)
-
-# print(max_steps_X)
-# print(max_steps_Y)
-# print(max_steps_Z)
-# print(max_steps_E)
-# print(max_steps_Q)
 
 def start_camera():
     print("Starting camera and preview...")
@@ -84,20 +59,6 @@ def set_camera():
     print("waiting for 2 seconds to apply camera settings...")
     time.sleep(2)
 
-def test_reply():
-    # combine value to string to send to Arduino
-    send_string = "k_m_0" + "\n"
-    print("serial command: " + send_string)
-
-    # Send command to Arduino
-    ser.write(str(send_string).encode())
-    
-    while(1):
-        line = ser.readline().decode('ascii').rstrip()
-        if(line == "k_m_0"):
-            print("exit status: " + "0")
-            return
-        time.sleep(0.01)
 
 def take_picture():
     # set_camera()
@@ -123,10 +84,6 @@ def take_picture():
             print("exit status: " + "0")
             return
 
-# def stop_camera():
-#     picam2.close()
-
-
 def move_motor(motor, direction):
     
     # Get values from input fields
@@ -150,8 +107,11 @@ def move_motor(motor, direction):
     # Send command to Arduino
     ser.write(str(send_string).encode())    
     
+    # flush input buffer
+    ser.reset_input_buffer()
     while(1):
         line = ser.readline().decode('ascii').rstrip()
+        # print(line)
         if(line == "0" or line == "1"):
             print("exit status: " + line)
             return
@@ -163,6 +123,9 @@ def home_motor(motor):
 
     # Send command to Arduino
     ser.write(str(send_string).encode())
+    
+    # flush input buffer
+    ser.reset_input_buffer()
     
     while(1):
         line = ser.readline().decode('ascii').rstrip()
@@ -178,6 +141,10 @@ def deactivate_motors():
     # Send command to Arduino
     ser.write(str(send_string).encode())
     
+    # flush input buffer
+    ser.reset_input_buffer()
+    
+    
     while(1):
         line = ser.readline().decode('ascii').rstrip()
         if(line == "0"):
@@ -189,10 +156,17 @@ def activate_motors():
     send_string = "x_activate_x" + "\n"
     
     # Send command to Arduino
-    print("sending serial command: " + send_string)
+    #print("sending serial command: " + send_string)
+    print("serial command: " + send_string)
     ser.write(str(send_string).encode())
     
-    print("serial command sent: " + send_string)
+    # print("serial command sent: " + send_string)
+    
+    # flush input buffer
+    ser.reset_input_buffer()
+    
+    # flush input buffer
+    ser.reset_input_buffer()
     
     while(1):
         # print("reading serial")
@@ -345,8 +319,7 @@ row_spacer = tk.Label(root, text="        ")
 row_spacer.grid(row=r, column=1)
 
 r = r+1
-button_test_reply = tk.Button(root, text="Test reply", command=test_reply)
-button_test_reply.grid(row=r, column=0, columnspan=2)
+
 
 r = r+1
 row_spacer = tk.Label(root, text="        ")
