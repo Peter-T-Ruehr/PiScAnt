@@ -2,10 +2,13 @@ import serial
 import tkinter as tk
 import time
 from picamera2 import Picamera2, Preview
+from picamera2.controls import Controls
 import os
+import datetime
 
    
-ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1) # Replace with the correct port name and baud rate
+ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=5) # Replace with the correct port name and baud rate
+time.sleep(1)
 ser.reset_input_buffer()
 
 picam2 = Picamera2()
@@ -34,17 +37,17 @@ steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
 steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
-max_movement_X = 360 # °
-max_movement_Y = 70 # °
-max_movement_Z = 150 # mm
-max_movement_E = 150 # mm
-max_movement_Q = 150 # mm
+# max_movement_X = 360 # °
+# max_movement_Y = 70 # °
+# max_movement_Z = 150 # mm
+# max_movement_E = 150 # mm
+# max_movement_Q = 150 # mm
 
-max_steps_X = 360 * steps_per_rev_X
-max_steps_Y = 70 * steps_per_rev_Y
-max_steps_Z = 150 * steps_per_mm_Z
-max_steps_E = 150 * steps_per_mm_E
-max_steps_Q = 150 * steps_per_mm_Q
+# max_steps_X = 360 * steps_per_rev_X
+# max_steps_Y = 70 * steps_per_rev_Y
+# max_steps_Z = 150 * steps_per_mm_Z
+# max_steps_E = 150 * steps_per_mm_E
+# max_steps_Q = 150 * steps_per_mm_Q
 
 # print(steps_per_mm_E)
 # print(steps_per_rev_X)
@@ -52,16 +55,19 @@ max_steps_Q = 150 * steps_per_mm_Q
 # print(steps_per_mm_Z)
 # print(steps_per_mm_Q)
 
-print(max_steps_X)
-print(max_steps_Y)
-print(max_steps_Z)
-print(max_steps_E)
-print(max_steps_Q)
+# print(max_steps_X)
+# print(max_steps_Y)
+# print(max_steps_Z)
+# print(max_steps_E)
+# print(max_steps_Q)
 
 def start_camera():
+    print("Starting camera and preview...")
     picam2.start_preview(Preview.QTGL)
     picam2.configure(preview_config)
+
     picam2.start()
+    time.sleep(1)
 
 def set_camera():
     global exposure
@@ -69,10 +75,29 @@ def set_camera():
     exposure = (int(entry_exposure.get())-0) *1000
     gain = int(entry_gain.get())-0
     print("setting camera to ", exposure, " ", gain)
-    picam2.set_controls({"ExposureTime": exposure, "AnalogueGain": gain}) # 1000000 ms = 1 s
-    capture_config = picam2.create_still_configuration()
+        
+    ctrls = Controls(picam2)
+    ctrls.AnalogueGain = gain
+    ctrls.ExposureTime = exposure
+    picam2.set_controls(ctrls)
+
     print("waiting for 2 seconds to apply camera settings...")
     time.sleep(2)
+
+def test_reply():
+    # combine value to string to send to Arduino
+    send_string = "k_m_0" + "\n"
+    print("serial command: " + send_string)
+
+    # Send command to Arduino
+    ser.write(str(send_string).encode())
+    
+    while(1):
+        line = ser.readline().decode('ascii').rstrip()
+        if(line == "k_m_0"):
+            print("exit status: " + "0")
+            return
+        time.sleep(0.01)
 
 def take_picture():
     # set_camera()
@@ -80,17 +105,27 @@ def take_picture():
     
     # create specimen directory
     os.makedirs(project_name + "/previews/", exist_ok=True) # , exist_ok=True
-
+    
+    # get current time
+    curr_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    
     #save the picture
-    curr_image_name = './' + project_name +'/previews/' + str(exposure/1000) + '_' + str(gain) + '.jpg'
+    curr_image_name = './' + project_name +'/previews/' + curr_time + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
     picam2.switch_mode_and_capture_file(capture_config, curr_image_name)
+    
+    # wait tuill picture is saved
+    print("looking for file " + curr_image_name + "..-")
+    while(1):
+        file_present = os.path.isfile(curr_image_name)
+        if(file_present == True):
+            print("delaying for " + str(exposure/1000000) + "seconds...")
+            time.sleep(exposure/1000000)
+            print("exit status: " + "0")
+            return
 
-def stop_camera():
-    picam2.close()
+# def stop_camera():
+#     picam2.close()
 
-
-def move_motors():
-    time.sleep(0.1)
 
 def move_motor(motor, direction):
     
@@ -109,21 +144,21 @@ def move_motor(motor, direction):
     # print("motor " + motor + ": " + input_value)
     
     # combine value to string to send to Arduino
-    send_string = motor + "_" + direction + "_" + input_value
+    send_string = motor + "_" + direction + "_" + input_value + "\n"
     print("serial command: " + send_string)
 
     # Send command to Arduino
-    ser.write(str(send_string).encode())
+    ser.write(str(send_string).encode())    
     
     while(1):
         line = ser.readline().decode('ascii').rstrip()
         if(line == "0" or line == "1"):
             print("exit status: " + line)
             return
-        time.sleep(0.1)
+        time.sleep(0.01)
 
 def home_motor(motor):
-    send_string = motor + "_home_0"
+    send_string = motor + "_home_0" + "\n"
     print("serial command: " + send_string)
 
     # Send command to Arduino
@@ -134,8 +169,39 @@ def home_motor(motor):
         if(line == "2"):
             print("exit status: " + line)
             return
-        time.sleep(0.1)
+        time.sleep(0.01)
 
+def deactivate_motors():
+    send_string = "x_deactivate_x" + "\n"
+    print("serial command: " + send_string)
+    
+    # Send command to Arduino
+    ser.write(str(send_string).encode())
+    
+    while(1):
+        line = ser.readline().decode('ascii').rstrip()
+        if(line == "0"):
+            print("exit status: " + line)
+            return
+        time.sleep(0.01)
+        
+def activate_motors():
+    send_string = "x_activate_x" + "\n"
+    
+    # Send command to Arduino
+    print("sending serial command: " + send_string)
+    ser.write(str(send_string).encode())
+    
+    print("serial command sent: " + send_string)
+    
+    while(1):
+        # print("reading serial")
+        line = ser.readline().decode('ascii').rstrip()
+        if(line == "0"):
+            print("exit status: " + line)
+            return
+        time.sleep(0.01)
+        
 def get_project_name():
     global project_name
     project_name = str(entry_project.get())
@@ -240,6 +306,10 @@ home_Q.grid(row=r, column=4)
 # button_stop_cam.grid(row=r, column=2, columnspan=2)
 
 r = r+1
+row_spacer = tk.Label(root, text="        ")
+row_spacer.grid(row=r, column=1)
+
+r = r+1
 spacer_Q = tk.Label(root, text='exposure (ms)')
 spacer_Q.grid(row=r, column=0)
 entry_exposure = tk.Entry(root, width=10)
@@ -253,15 +323,38 @@ new_text = "1"
 entry_gain.insert(0, new_text)
 entry_gain.grid(row=r, column=3)
 
+
 r = r+1
-button_start_cam = tk.Button(root, text="Set Camera", command=lambda: set_camera())
+button_start_cam = tk.Button(root, text="Set Camera", command=set_camera)
 button_start_cam.grid(row=r, column=0, columnspan=2)
-button_stop_cam = tk.Button(root, text="Take Picture", command=lambda: take_picture())
+button_stop_cam = tk.Button(root, text="Take Picture", command=take_picture)
 button_stop_cam.grid(row=r, column=2, columnspan=2)
+
+r = r+1
+row_spacer = tk.Label(root, text="        ")
+row_spacer.grid(row=r, column=1)
+
+r = r+1
+button_start_cam = tk.Button(root, text="Activate motors", command=activate_motors)
+button_start_cam.grid(row=r, column=0, columnspan=2)
+button_stop_cam = tk.Button(root, text="Deactivate motors", command=deactivate_motors)
+button_stop_cam.grid(row=r, column=2, columnspan=2)
+
+r = r+1
+row_spacer = tk.Label(root, text="        ")
+row_spacer.grid(row=r, column=1)
+
+r = r+1
+button_test_reply = tk.Button(root, text="Test reply", command=test_reply)
+button_test_reply.grid(row=r, column=0, columnspan=2)
+
+r = r+1
+row_spacer = tk.Label(root, text="        ")
+row_spacer.grid(row=r, column=1)
 
 # Create submit button
 r = r+2
-submit_button = tk.Button(root, text="Start Scanning!", command=move_motors)
+submit_button = tk.Button(root, text="Start Scanning!", command=deactivate_motors)
 submit_button.grid(row=r, column=0, columnspan=2)
 
 root.mainloop()
