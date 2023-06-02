@@ -15,11 +15,11 @@ picam2 = Picamera2()
 preview_config = picam2.create_preview_configuration()
 capture_config = picam2.create_still_configuration()
 
-microstepping_X = 8
-microstepping_Y = 8
-microstepping_Z = 1
-microstepping_E = 1
-microstepping_Q = 1
+microstepping_X = 8 # 110
+microstepping_Y = 8 # 110
+microstepping_Z = 4 # 010
+microstepping_E = 1 # 000
+microstepping_Q = 1 # 000
 
 steps_per_rev_X = 200 * microstepping_X
 steps_per_rev_Y = 200 * microstepping_Y
@@ -188,7 +188,7 @@ def start_scan():
                 take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
                 # move_motor_by_steps('z', steps_z) 
                 print("Moving motor Z by " + str(Z_steps_per_increment))
-                print(Z_steps_per_increment)
+                # print(Z_steps_per_increment)
                 move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
                 
                 if(z == Z_increments-1):
@@ -259,6 +259,9 @@ def start_scan():
                     # move_motor_to('y', y_pos_init)
                     print("Resetting 5 motor Y by " + str(Y_increments*Y_steps_per_increment))
                     move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments*Y_steps_per_increment))
+        print("Moving motor X by " + str(X_steps_per_increment))
+        # print(X_steps_per_increment)
+        move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
     print('done')
 
         
@@ -637,12 +640,12 @@ r = r+1
 spacer_Q = tk.Label(root, text="Homing")
 spacer_Q.grid(row=r, column=0)
 r = r+1
-home_X = tk.Button(root, text="Home X", command=lambda: home_motor(motor = "X"))
-home_X.grid(row=r, column=0)
+# home_X = tk.Button(root, text="Home X", command=lambda: home_motor(motor = "X"))
+# home_X.grid(row=r, column=0)
 home_Y = tk.Button(root, text="Home Y", command=lambda: home_motor(motor = "Y"))
-home_Y.grid(row=r, column=1)
+home_Y.grid(row=r, column=0)
 home_Z = tk.Button(root, text="Home Z", command=lambda: home_motor(motor = "Z"))
-home_Z.grid(row=r, column=2)
+home_Z.grid(row=r, column=1)
 r = r+1
 home_E = tk.Button(root, text="Home E", command=lambda: home_motor(motor = "E"))
 home_E.grid(row=r, column=0)
@@ -670,24 +673,24 @@ spacer_X = tk.Label(root, text="°         ")
 spacer_X.grid(row=r, column=3)
 
 r = r+1
-button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = "L", step_type = "unit"))
+button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = "R", step_type = "unit"))
 button_Y_L.grid(row=r, column=0)
 entry_Y = tk.Entry(root, width=10)
 new_text = "10"
 entry_Y.insert(0, new_text)
 entry_Y.grid(row=r, column=1)
-button_Y_R = tk.Button(root, text="Y >>>", command=lambda: move_motor(motor = "Y", direction = "R", step_type = "unit"))
+button_Y_R = tk.Button(root, text="Y >>>", command=lambda: move_motor(motor = "Y", direction = "L", step_type = "unit"))
 button_Y_R.grid(row=r, column=2)
 spacer_Y = tk.Label(root, text="°         ")
 spacer_Y.grid(row=r, column=3)
 r = r+1
-button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = "L", step_type = "unit"))
+button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = "R", step_type = "unit"))
 button_Z_L.grid(row=r, column=0)
 entry_Z = tk.Entry(root, width=10)
 new_text = "1000"
 entry_Z.insert(0, new_text)
 entry_Z.grid(row=r, column=1)
-button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = "R", step_type = "unit"))
+button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = "L", step_type = "unit"))
 button_Z_R.grid(row=r, column=2)
 spacer_Z = tk.Label(root, text="um        ")
 spacer_Z.grid(row=r, column=3)
