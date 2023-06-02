@@ -83,7 +83,7 @@ void setup() {
 
   Serial.begin(9600);
   delay(1000);
-  Serial.println("Arduino is ready to receive on Baud 9600...");
+  // Serial.println("Arduino is ready to receive on Baud 9600...");
 }
 
 int steps;
@@ -101,6 +101,7 @@ int ENABLE_PIN;
 int MIN_PIN;
 int MAX_PIN;
 
+int delay_motor;
 
 void loop() {
   if (Serial.available() > 0) {
@@ -140,9 +141,9 @@ void loop() {
 
 
 void home_axis() {
-  Serial.print("Homing ");
-  Serial.print(device);
-  Serial.println(" axis...");
+  // Serial.print("Homing ");
+  // Serial.print(device);
+  // Serial.println(" axis...");
 
   define_motor_pins();
 
@@ -158,13 +159,13 @@ void home_axis() {
   // run motor
   while (1) {
     if (digitalRead(MIN_PIN) == pressed) {
-      Serial.println("Home reached.");
+      // Serial.println("Home reached.");
       break;
     }
     digitalWrite(STEP_PIN, HIGH);
-    delayMicroseconds(1000);
+    delayMicroseconds(delay_motor);
     digitalWrite(STEP_PIN, LOW);
-    delayMicroseconds(1000);
+    delayMicroseconds(delay_motor);
     steps++;
   }
 
@@ -172,8 +173,8 @@ void home_axis() {
   // digitalWrite(ENABLE_PIN, HIGH);
 
   // message end of action
-  //Serial.println(steps);
-  Serial.println(2); // 2 because mover_motor() already prints out 0 or 1
+  //// Serial.println(steps);
+  Serial.println(2); // 2 because move_motor() already prints out 0 or 1
 }
 
 // read serial input
@@ -185,9 +186,9 @@ void read_serial() {
   String number_str = getValue(input, '_', 2);
   steps = number_str.toFloat();
   
-  Serial.println("device: " + device);
-  Serial.println("command: " + command);
-  Serial.println("steps: " + steps);
+  // Serial.println("device: " + device);
+  // Serial.println("command: " + command);
+  // Serial.println("steps: " + steps);
 }
 
 String getValue(String data, char separator, int index)
@@ -213,7 +214,7 @@ void move_motor() {
 
   // enable motor
   digitalWrite(ENABLE_PIN, LOW);
-  delayMicroseconds(1000);
+  delayMicroseconds(delay_motor);
 
   // check if right or left movement i desired
   if (command == "L") {
@@ -226,9 +227,9 @@ void move_motor() {
   for (int step = 1; step <= steps; step++) {
     if (digitalRead(MIN_PIN) == not_pressed) {
       digitalWrite(STEP_PIN, HIGH);
-      delayMicroseconds(1000);
+      delayMicroseconds(delay_motor);
       digitalWrite(STEP_PIN, LOW);
-      delayMicroseconds(1000);
+      delayMicroseconds(delay_motor);
       status = 0;
     } else {
       // Serial.print("limit ");
@@ -247,7 +248,7 @@ void move_motor() {
 }
 
 void deactivate_motors() {
-  Serial.println("deactivating all motors...");
+  // Serial.println("deactivating all motors...");
   digitalWrite(X_ENABLE_PIN, HIGH);
   digitalWrite(Y_ENABLE_PIN, HIGH);
   digitalWrite(Z_ENABLE_PIN, HIGH);
@@ -257,7 +258,7 @@ void deactivate_motors() {
 }
 
 void activate_motors() {
-  Serial.println("activating all motors...");
+  // Serial.println("activating all motors...");
   digitalWrite(X_ENABLE_PIN, LOW);
   digitalWrite(Y_ENABLE_PIN, LOW);
   digitalWrite(Z_ENABLE_PIN, LOW);
@@ -269,11 +270,11 @@ void activate_motors() {
 // LIGHT COMMANDS
 void light_switch() {
   if (steps == 1) {
-    Serial.println("Light on.");
+    // Serial.println("Light on.");
     digitalWrite(LIGHT_PIN, HIGH);
   } else {
     digitalWrite(LIGHT_PIN, LOW);
-    Serial.println("Light off.");
+    // Serial.println("Light off.");
   }
   Serial.println(0);
 }
@@ -291,29 +292,34 @@ void define_motor_pins() {
     DIR_PIN = 55;
     ENABLE_PIN = 38;
     MIN_PIN = 3;
+    delay_motor = 4000;
   } else if (device == "Y") {
     // Serial.println("motor: Y");
     STEP_PIN = 60;
     DIR_PIN = 61;
     ENABLE_PIN = 56;
     MIN_PIN = 14;
+    delay_motor = 4000;
   } else if (device == "Z") {
     // Serial.println("motor: Z");
     STEP_PIN = 46;
     DIR_PIN = 48;
     ENABLE_PIN = 62;
     MIN_PIN = 18;
+    delay_motor = 750;
   } else if (device == "E") {
     // Serial.println("motor: E");
     STEP_PIN = 26;
     DIR_PIN = 28;
     ENABLE_PIN = 24;
     MIN_PIN = 2;
+    delay_motor = 1000;
   } else if (device == "Q") {
     // Serial.println("motor: Q");
     STEP_PIN = 36;
     DIR_PIN = 34;
     ENABLE_PIN = 30;
     MIN_PIN = 15;
+    delay_motor = 1000;
   }
 }
