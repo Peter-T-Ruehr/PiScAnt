@@ -3,6 +3,9 @@ import tkinter as tk
 import time
 from picamera2 import Picamera2, Preview
 from picamera2.controls import Controls
+# import io
+# import sys
+# from contextlib import redirect_stdout
 import os
 import datetime
 
@@ -83,8 +86,8 @@ def set_camera():
     ctrls.ExposureTime = exposure
     picam2.set_controls(ctrls)
 
-    print("waiting for 2 seconds to apply camera settings...")
-    time.sleep(2)
+    print("waiting for 1 second to apply camera settings...")
+    time.sleep(1)
 
 
 def take_picture(state = "scan", pos = ""):
@@ -105,20 +108,27 @@ def take_picture(state = "scan", pos = ""):
         
     
     #save the picture
+    print("********************** taking picture...")
+    # set a trap and redirect stdout
+    # trap = io.StringIO()
+    # with redirect_stdout(trap):
     picam2.switch_mode_and_capture_file(capture_config, curr_image_name)
     
     # wait tuill picture is saved
-    print("looking for file " + curr_image_name + "..-")
+    print("looking for file " + curr_image_name + "...")
     while(1):
         file_present = os.path.isfile(curr_image_name)
         if(file_present == True):
-            print("delaying for " + str(exposure/1000000) + "seconds...")
+            print("file " + curr_image_name + "exists!")
+            print("delaying for " + str(exposure/1000000) + " seconds...")
             time.sleep(exposure/1000000)
             print("exit status: " + "0")
+            print("**********************")
             return
 
 def start_scan():
-    print("Starting scan!")
+    print("****************")
+    print("Scan process initalized.")
     
     global X_total
     global Y_total
@@ -126,147 +136,95 @@ def start_scan():
     global E_total
     global Q_total
     
+    print("****************")
+    print("Calculating steps")
     # X
     X_steps_scan = X_max-X_min
-    X_increments = 2
-    X_steps_per_increment = round(X_steps_scan/X_increments)
+    X_increments = 3
+    X_steps_per_increment = round(X_steps_scan/(X_increments-1))
     print(str(X_steps_per_increment) + " per " + str(X_increments) + " increments")
     
     # Y
     Y_steps_scan = Y_max-Y_min
-    Y_increments = 2
-    Y_steps_per_increment = round(Y_steps_scan/Y_increments)
+    Y_increments = 3
+    Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
     print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
     
     # Z
     Z_steps_scan = Z_max-Z_min
-    Z_increments = 2
-    Z_steps_per_increment = round(Z_steps_scan/Z_increments)
+    Z_increments = 4
+    Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
     print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
     
     # E
     E_steps_scan = E_max-E_min
     E_increments = 2
-    E_steps_per_increment = round(E_steps_scan/E_increments)
+    E_steps_per_increment = round(E_steps_scan/(E_increments-1))
     print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
     
     # Q
     Q_steps_scan = Q_max-Q_min
     Q_increments = 2
-    Q_steps_per_increment = round(Q_steps_scan/Q_increments)
+    Q_steps_per_increment = round(Q_steps_scan/(Q_increments-1))
     print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
     
-    time.sleep(4)
+    time.sleep(2)
     # move motors back to its minimum
     # move_motors_to_start(motors = "all_motors")    
+    print("****************")
     
     # move all motors to start
-    #  move_motors_to_start(motors = "Z")
+    print("Moving all motors to start position.")
     move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_min))
     move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_min))
     move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min))
     move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min))
     move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min))
     
-    time.sleep(5)
-    # move all Z
-    # reset Z
-    # move one X
-    # move all Z
-    # reset Z
-    # (repeat for all X)
-    # move Y
-    # reset Z
-    # reset X
+    time.sleep(2)
     
     e = 0
     q = 0
+    print("****************")
     
-    for x in range(X_increments):
-        for y in range(Y_increments):
+    print("Starting scan!")
+    for y in range(Y_increments):
+        for x in range(X_increments):
             for z in range(Z_increments):
+                
+                print("X = " + str(x))
+                print("Y = " + str(y))
+                print("Z = " + str(z))
                 take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                # move_motor_by_steps('z', steps_z) 
-                print("Moving motor Z by " + str(Z_steps_per_increment))
-                # print(Z_steps_per_increment)
-                move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
+                print("taking picture...")
+                # time.sleep(1)
                 
-                if(z == Z_increments-1):
-                    z += 1
-                    take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                    
-                    # move_motor_to('z', z_pos_init)
-                    print("Resetting 1 motor Z by " + str(Z_increments*Z_steps_per_increment))
-                    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments*Z_steps_per_increment))
-
-            # move_motor_by_steps('y', steps_y)
-            move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
-            if(y == Y_increments-1): 
-                y += 1   
-                for z in range(Z_increments):
-                    take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                    
-                    # move_motor_by_steps('z', steps_z) 
+                if(z <  Z_increments-1):
                     move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
-                    
-                    if(z == Z_increments-1):
-                        z += 1
-                        take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                        
-                        # ('z', z_pos_init)                        
-                        move_motor(motor = "Z", direction = "L", step_type = "steps", steps = Z_increments*Z_steps_per_increment)
-                # move_motor_to('y', y_pos_init)
-                print("Resetting 2 motor Y by " + str(Y_increments*Y_steps_per_increment))
-                move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments*Y_steps_per_increment))
-        # move_motor_by_steps('x', steps_x)
-        move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
-
-        if(x == X_increments-1):
-            x += 1
-            for y in range(Y_increments):
-                for z in range(Z_increments):
-                    take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                  
-                    # move_motor_by_steps('z', steps_z) 
-                    move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment)  
-                
-                    if(z == Z_increments-1):
-                        z += 1
-                        take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                        
-                        # move_motor_to('z', z_pos_init)
-                        print("Resetting 3 motor Z by " + str(Z_increments*Z_steps_per_increment))
-                        move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments*Z_steps_per_increment))
+                elif(z ==  Z_increments-1):
+                    print("Resetting motor Z by " + str((Z_increments-1)*Z_steps_per_increment))
+                    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments-1)*Z_steps_per_increment)
+                    print("****************")
+            if(x <  X_increments-1):
+                move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
+            elif(y ==  Y_increments-1):                
+                print("Resetting motor X by " + str((X_increments-1)*X_steps_per_increment))
+                move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
             
-                # move_motor_by_steps('y', steps_y)
-                move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment) 
-                if(y == Y_increments-1):  
-                    y += 1  
-                    for z in range(Z_increments):
-                        take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                      
-                        # move_motor_by_steps('z', steps_z)
-                        move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
-                        
-                        if(z == Z_increments-1):
-                            z += 1
-                            take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                            
-                            # move_motor_to('z', z_pos_init)
-                            print("Resetting 4 motor Z by " + str(Z_increments*Z_steps_per_increment))
-                            move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments*Z_steps_per_increment))
-                            
-                    # move_motor_to('y', y_pos_init)
-                    print("Resetting 5 motor Y by " + str(Y_increments*Y_steps_per_increment))
-                    move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments*Y_steps_per_increment))
-        print("Moving motor X by " + str(X_steps_per_increment))
-        # print(X_steps_per_increment)
-        move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
-    print('done')
+        if(y <  Y_increments-1):
+            move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
+            time.sleep(1)
+        elif(y ==  Y_increments-1):                
+            print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
+            move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
+            time.sleep(1)
+                    
+    print('Scan done!')
 
         
     
 def move_motor(motor, direction, step_type, steps=0):
+    
     global X_total
     global Y_total
     global Z_total
@@ -320,7 +278,6 @@ def move_motor(motor, direction, step_type, steps=0):
             elif(step_type == "steps"):
                 steps = steps
             input_value = str(steps)
-            print(steps)
             if(direction == "R"):
                 Z_total = Z_total + steps
             elif(direction == "L"):
