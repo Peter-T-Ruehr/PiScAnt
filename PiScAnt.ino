@@ -223,13 +223,37 @@ void move_motor() {
     digitalWrite(DIR_PIN, LOW);  // right
   }
 
-  // run motor
+  // run motor X_R_100
+  int max_acc_steps = 15;
+  if(max_acc_steps > steps/2){
+    max_acc_steps = round(steps/2);
+  }
+  int min_delay_motor = delay_motor;
+  int start_delay_motor = 1.5*delay_motor;
+  int delay_change = round((start_delay_motor-min_delay_motor)/max_acc_steps);
+  int curr_delay_motor = start_delay_motor;
+  
   for (int step = 1; step <= steps; step++) {
+    Serial.println(curr_delay_motor);
+    if(step <= max_acc_steps){
+      curr_delay_motor -= delay_change;
+      if(curr_delay_motor < min_delay_motor){
+       curr_delay_motor = min_delay_motor;
+      }
+    }
+    else if(step >= (steps-max_acc_steps)){
+      curr_delay_motor += delay_change;
+      if(curr_delay_motor > start_delay_motor){
+       curr_delay_motor = start_delay_motor;
+      }
+    }
+
     if (digitalRead(MIN_PIN) == not_pressed) {
+
       digitalWrite(STEP_PIN, HIGH);
-      delayMicroseconds(delay_motor);
+      delayMicroseconds(curr_delay_motor);
       digitalWrite(STEP_PIN, LOW);
-      delayMicroseconds(delay_motor);
+      delayMicroseconds(curr_delay_motor);
       status = 0;
     } else {
       // Serial.print("limit ");
