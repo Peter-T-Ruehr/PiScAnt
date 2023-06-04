@@ -38,16 +38,19 @@ steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
 steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
+iterations_start = 2
 
 X_homed = "0"
 X_min = 0
 X_max = 0
 X_total = 0
+X_increments = iterations_start
 
 Y_homed = "0"
 Y_min = 0
 Y_max = 0
 Y_total = 0
+Y_increments = iterations_start
 
 Z_max_mm = 125
 Z_max_steps = round(Z_max_mm* steps_per_mm_Z) # 6250
@@ -55,16 +58,19 @@ Z_homed = "0"
 Z_min = 0
 Z_max = 0
 Z_total = 0
+Z_increments = iterations_start
 
 E_homed = "0"
 E_min = 0
 E_max = 0
 E_total = 0
+E_increments = iterations_start
 
 Q_homed = "0"
 Q_min = 0
 Q_max = 0
 Q_total = 0
+Q_increments = iterations_start
 
 def start_camera():
     print("Starting camera and preview...")
@@ -140,31 +146,26 @@ def start_scan():
     print("Calculating steps")
     # X
     X_steps_scan = X_max-X_min
-    X_increments = 3
     X_steps_per_increment = round(X_steps_scan/(X_increments-1))
     print(str(X_steps_per_increment) + " per " + str(X_increments) + " increments")
     
     # Y
     Y_steps_scan = Y_max-Y_min
-    Y_increments = 3
     Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
     print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
     
     # Z
     Z_steps_scan = Z_max-Z_min
-    Z_increments = 4
     Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
     print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
     
     # E
     E_steps_scan = E_max-E_min
-    E_increments = 2
     E_steps_per_increment = round(E_steps_scan/(E_increments-1))
     print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
     
     # Q
     Q_steps_scan = Q_max-Q_min
-    Q_increments = 2
     Q_steps_per_increment = round(Q_steps_scan/(Q_increments-1))
     print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
     
@@ -499,7 +500,30 @@ def set_motor(motor, direction):
             Q_max = Q_total
             global Q_max_text
             Q_max_text.set(Q_max)
-    
+            
+def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
+    global X_increments
+    X_increments = int(X_it)
+    X_it_text.set(X_it)
+    global Y_increments
+    Y_increments = int(Y_it)
+    Y_it_text.set(Y_it)
+    global Z_increments
+    Z_increments = int(Z_it)
+    Z_it_text.set(Z_it)
+    global E_increments
+    E_increments = int(E_it)
+    E_it_text.set(E_it)
+    global Q_increments
+    Q_increments = int(Q_it)
+    Q_it_text.set(Q_it)
+    print("*****************")
+    print("X iterations: " + str(X_it))
+    print("Y iterations: " + str(Y_it))
+    print("Z iterations: " + str(Z_it))
+    print("E iterations: " + str(E_it))
+    print("Q iterations: " + str(Q_it))
+    print("*****************")
     
     
     
@@ -535,13 +559,24 @@ Q_min_text.set(Q_min)
 Q_max_text = tk.IntVar()
 Q_max_text.set(Q_max)
 
+X_it_text = tk.IntVar()
+X_it_text.set(X_increments)
+Y_it_text = tk.IntVar()
+Y_it_text.set(Y_increments)
+Z_it_text = tk.IntVar()
+Z_it_text.set(Z_increments)
+E_it_text = tk.IntVar()
+E_it_text.set(E_increments)
+Q_it_text = tk.IntVar()
+Q_it_text.set(Q_increments)
+
 # get screen width and height
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
 # calculate position x and y coordinates
-width = 450
-height = 900
+width = 800
+height = 700
 x = (screen_width/3) - (width/2)
 y = (0) - (height/2) # screen_height/2
 root.geometry('%dx%d+%d+%d' % (width, height, x, y))
@@ -553,7 +588,7 @@ spacer_Q.grid(row=r, column=0)
 r = r+1
 spacer_project = tk.Label(root, text="Project name:")
 spacer_project.grid(row=r, column=0)
-entry_project = tk.Entry(root, width=10)
+entry_project = tk.Entry(root, width=7)
 new_text = "project1"
 entry_project.insert(0, new_text)
 entry_project.grid(row=r, column=1)
@@ -578,14 +613,14 @@ button_stop_cam.grid(row=r, column=3, columnspan=1)
 r = r+1
 spacer_Q = tk.Label(root, text='exposure (ms)')
 spacer_Q.grid(row=r, column=0)
-entry_exposure = tk.Entry(root, width=10)
-new_text = "250"
+entry_exposure = tk.Entry(root, width=7)
+new_text = "150"
 entry_exposure.insert(0, new_text)
 entry_exposure.grid(row=r, column=1)
 spacer_Q = tk.Label(root, text='analogue gain')
 spacer_Q.grid(row=r, column=2)
-entry_gain = tk.Entry(root, width=10)
-new_text = "1"
+entry_gain = tk.Entry(root, width=7)
+new_text = "0"
 entry_gain.insert(0, new_text)
 entry_gain.grid(row=r, column=3)
 
@@ -611,6 +646,7 @@ home_Q.grid(row=r, column=1)
 
 # Motor controls
 r = r+1
+r_motor_controls = r
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
@@ -620,7 +656,7 @@ spacer_Q.grid(row=r, column=0)
 r = r+1
 button_X_L = tk.Button(root, text="<<< X", command=lambda: move_motor(motor = "X", direction = "L", step_type = "unit"))
 button_X_L.grid(row=r, column=0)
-entry_X = tk.Entry(root, width=10)
+entry_X = tk.Entry(root, width=7)
 new_text = "10"
 entry_X.insert(0, new_text)
 entry_X.grid(row=r, column=1)
@@ -632,7 +668,7 @@ spacer_X.grid(row=r, column=3)
 r = r+1
 button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = "R", step_type = "unit"))
 button_Y_L.grid(row=r, column=0)
-entry_Y = tk.Entry(root, width=10)
+entry_Y = tk.Entry(root, width=7)
 new_text = "10"
 entry_Y.insert(0, new_text)
 entry_Y.grid(row=r, column=1)
@@ -643,7 +679,7 @@ spacer_Y.grid(row=r, column=3)
 r = r+1
 button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = "R", step_type = "unit"))
 button_Z_L.grid(row=r, column=0)
-entry_Z = tk.Entry(root, width=10)
+entry_Z = tk.Entry(root, width=7)
 new_text = "1000"
 entry_Z.insert(0, new_text)
 entry_Z.grid(row=r, column=1)
@@ -655,7 +691,7 @@ spacer_Z.grid(row=r, column=3)
 r = r+1
 button_E_L = tk.Button(root, text="<<< E", command=lambda: move_motor(motor = "E", direction = "L", step_type = "unit"))
 button_E_L.grid(row=r, column=0)
-entry_E = tk.Entry(root, width=10)
+entry_E = tk.Entry(root, width=7)
 new_text = "1000"
 entry_E.insert(0, new_text)
 entry_E.grid(row=r, column=1)
@@ -667,7 +703,7 @@ spacer_E.grid(row=r, column=3)
 r = r+1
 button_Q_L = tk.Button(root, text="<<< Q", command=lambda: move_motor(motor = "Q", direction = "L", step_type = "unit"))
 button_Q_L.grid(row=r, column=0)
-entry_Q = tk.Entry(root, width=10)
+entry_Q = tk.Entry(root, width=7)
 new_text = "1000"
 entry_Q.insert(0, new_text)
 entry_Q.grid(row=r, column=1)
@@ -676,61 +712,119 @@ button_Q_R.grid(row=r, column=2)
 spacer_Q = tk.Label(root, text="um        ")
 spacer_Q.grid(row=r, column=3)
 
+
+
 # Motor ranges
-r = r+1
+r = r_motor_controls
 spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=0)
+spacer_Q.grid(row=r, column=4)
 r = r+1
 spacer_Q = tk.Label(root, text="Motor ranges")
-spacer_Q.grid(row=r, column=0)
+spacer_Q.grid(row=r, column=4)
 r = r+1
 set_X_min = tk.Button(root, text="Set X min", command=lambda: set_motor(motor = "X", direction = "min"))
-set_X_min.grid(row=r, column=0)
+set_X_min.grid(row=r, column=4)
 X_min_label = tk.Label(root, textvariable=X_min_text)
-X_min_label.grid(row=r, column=1)
+X_min_label.grid(row=r, column=5)
 X_max_label = tk.Label(root, textvariable=X_max_text)
-X_max_label.grid(row=r, column=2)
+X_max_label.grid(row=r, column=6)
 set_X_max = tk.Button(root, text="Set X max", command=lambda: set_motor(motor = "X", direction = "max"))
-set_X_max.grid(row=r, column=3)
+set_X_max.grid(row=r, column=7)
 r = r+1
 set_Y_min = tk.Button(root, text="Set Y min", command=lambda: set_motor(motor = "Y", direction = "min"))
-set_Y_min.grid(row=r, column=0)
+set_Y_min.grid(row=r, column=4)
 Y_min_label = tk.Label(root, textvariable=Y_min_text)
-Y_min_label.grid(row=r, column=1)
+Y_min_label.grid(row=r, column=5)
 Y_max_label = tk.Label(root, textvariable=Y_max_text)
-Y_max_label.grid(row=r, column=2)
+Y_max_label.grid(row=r, column=6)
 set_Y_max = tk.Button(root, text="Set Y max", command=lambda: set_motor(motor = "Y", direction = "max"))
-set_Y_max.grid(row=r, column=3)
+set_Y_max.grid(row=r, column=7)
 r = r+1
 set_Z_min = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min"))
-set_Z_min.grid(row=r, column=0)
+set_Z_min.grid(row=r, column=4)
 Z_min_label = tk.Label(root, textvariable=Z_min_text)
-Z_min_label.grid(row=r, column=1)
+Z_min_label.grid(row=r, column=5)
 Z_max_label = tk.Label(root, textvariable=Z_max_text)
-Z_max_label.grid(row=r, column=2)
+Z_max_label.grid(row=r, column=6)
 set_Z_max = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max"))
-set_Z_max.grid(row=r, column=3)
+set_Z_max.grid(row=r, column=7)
 r = r+1
 set_E_min = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min"))
-set_E_min.grid(row=r, column=0)
+set_E_min.grid(row=r, column=4)
 E_min_label = tk.Label(root, textvariable=E_min_text)
-E_min_label.grid(row=r, column=1)
+E_min_label.grid(row=r, column=5)
 E_max_label = tk.Label(root, textvariable=E_max_text)
-E_max_label.grid(row=r, column=2)
+E_max_label.grid(row=r, column=6)
 set_E_max = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max"))
-set_E_max.grid(row=r, column=3)
+set_E_max.grid(row=r, column=7)
 r = r+1
 set_Q_min = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min"))
-set_Q_min.grid(row=r, column=0)
+set_Q_min.grid(row=r, column=4)
 Q_min_label = tk.Label(root, textvariable=Q_min_text)
-Q_min_label.grid(row=r, column=1)
+Q_min_label.grid(row=r, column=5)
 Q_max_label = tk.Label(root, textvariable=Q_max_text)
-Q_max_label.grid(row=r, column=2)
+Q_max_label.grid(row=r, column=6)
 set_Q_max = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max"))
-set_Q_max.grid(row=r, column=3)
+set_Q_max.grid(row=r, column=7)
+
+
+# Iterations
+r = r_motor_controls
+spacer_Q = tk.Label(root, text="   ")
+spacer_Q.grid(row=r, column=8)
+r = r+1
+spacer_Q = tk.Label(root, text="Iterations")
+spacer_Q.grid(row=r, column=8)
+
+# Set
+set_iterations_button = tk.Button(root, text="Set", command=lambda: set_iterations(X_it=entry_X_it.get(), Y_it=entry_Y_it.get(), Z_it=entry_Z_it.get(), E_it=entry_E_it.get(), Q_it=entry_Q_it.get()))
+set_iterations_button.grid(row=r, column=9)
+
+# Settings
+r = r+1
+entry_X_it = tk.Entry(root, width=5)
+new_text = str(iterations_start)
+entry_X_it.insert(0, new_text)
+entry_X_it.grid(row=r, column=8)
+X_it_label = tk.Label(root, textvariable=X_it_text)
+X_it_label.grid(row=r, column=9)
+
+
+r = r+1
+entry_Y_it = tk.Entry(root, width=5)
+new_text = str(iterations_start)
+entry_Y_it.insert(0, new_text)
+entry_Y_it.grid(row=r, column=8)
+Y_it_label = tk.Label(root, textvariable=Y_it_text)
+Y_it_label.grid(row=r, column=9)
+
+r = r+1
+entry_Z_it = tk.Entry(root, width=5)
+new_text = str(iterations_start)
+entry_Z_it.insert(0, new_text)
+entry_Z_it.grid(row=r, column=8)
+Z_it_label = tk.Label(root, textvariable=Z_it_text)
+Z_it_label.grid(row=r, column=9)
+
+r = r+1
+entry_E_it = tk.Entry(root, width=5)
+new_text = str(iterations_start)
+entry_E_it.insert(0, new_text)
+entry_E_it.grid(row=r, column=8)
+E_it_label = tk.Label(root, textvariable=E_it_text)
+E_it_label.grid(row=r, column=9)
+
+r = r+1
+entry_Q_it = tk.Entry(root, width=5)
+new_text = str(iterations_start)
+entry_Q_it.insert(0, new_text)
+entry_Q_it.grid(row=r, column=8)
+Q_it_label = tk.Label(root, textvariable=Q_it_text)
+Q_it_label.grid(row=r, column=9)
+
 
 # Motor energy
-r = r+1
+r = r_motor_controls+7
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
