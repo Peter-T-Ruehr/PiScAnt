@@ -8,6 +8,8 @@ from picamera2.controls import Controls
 # from contextlib import redirect_stdout
 import os
 import datetime
+import matplotlib.pyplot as plt
+import numpy as np
 
    
 ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=5) # Replace with the correct port name and baud rate
@@ -100,7 +102,6 @@ def take_picture(state = "scan", pos = ""):
     # set_camera()
     get_project_name()
     
-    
     # create specimen directory and define image name
     if(state == "preview"):
         os.makedirs(project_name + "/previews/", exist_ok=True) # , exist_ok=True
@@ -112,7 +113,6 @@ def take_picture(state = "scan", pos = ""):
         os.makedirs(project_name + "/scan/", exist_ok=True) # , exist_ok=True
         curr_image_name = './' + project_name +'/scan/' + pos + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
         
-    
     #save the picture
     print("********************** taking picture...")
     # set a trap and redirect stdout
@@ -126,8 +126,9 @@ def take_picture(state = "scan", pos = ""):
         file_present = os.path.isfile(curr_image_name)
         if(file_present == True):
             print("file " + curr_image_name + "exists!")
-            print("delaying for " + str(exposure/1000000) + " seconds...")
-            time.sleep(exposure/1000000)
+            delay_after_pic = 0 # exposure/1000000
+            print("delaying for " + str(delay_after_pic) + " seconds...")
+            time.sleep(delay_after_pic)
             print("exit status: " + "0")
             print("**********************")
             return
@@ -153,21 +154,47 @@ def start_scan():
     Y_steps_scan = Y_max-Y_min
     Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
     print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
-    
+
     # Z
     Z_steps_scan = Z_max-Z_min
     Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
     print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
-    
+
     # E
     E_steps_scan = E_max-E_min
-    E_steps_per_increment = round(E_steps_scan/(E_increments-1))
-    print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
     
-    # Q
-    Q_steps_scan = Q_max-Q_min
-    Q_steps_per_increment = round(Q_steps_scan/(Q_increments-1))
-    print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
+    # print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
+   
+    E_x_sin = np.linspace(0.5*np.pi, 2.5*np.pi, X_increments) # np.linspace(0, 2*np.pi, X_increments)
+    E_y_sin = np.sin(E_x_sin) * E_steps_scan
+    
+    plt.ion()
+    plt.plot(E_x_sin, E_y_sin)
+    
+    #print("E_y_sin")
+    #print(E_y_sin)
+    E_y_sin_steps = [j-i for i, j in zip(E_y_sin[:-1], E_y_sin[1:])]
+    E_y_sin_steps.append(E_y_sin_steps[0])
+    E_y_sin_steps = [x / 2 for x in E_y_sin_steps]
+    
+    print("E_y_sin_steps")
+    print(E_y_sin_steps)
+    
+    
+    plt.plot(E_x_sin, E_y_sin_steps)
+    
+    plt.show()
+    plt.pause(1)
+    
+    
+    
+    # # Q
+    # Q_steps_scan = Q_max-Q_min
+    # Q_steps_per_increment = round(Q_steps_scan/(Q_increments-1))
+    # print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
+    
+    
+    
     
     time.sleep(2)
     # move motors back to its minimum
@@ -186,46 +213,71 @@ def start_scan():
     
     e = 0
     q = 0
+    
+    
     print("****************")
     
     print("Starting scan!")
     for y in range(Y_increments):
         for x in range(X_increments):
+            e = x
+            print(e)
+            E = round(E_y_sin_steps[e])
+            if(E >= 0):
+                E_dir = "L"
+            if(E <= 0):
+                E_dir = "R"
+            E = abs(E)
+            print(E)
             for z in range(Z_increments):
                 
                 print("X = " + str(x))
                 print("Y = " + str(y))
                 print("Z = " + str(z))
+                print("E = " + str(e))
+                
                 take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
                 print("taking picture...")
                 # time.sleep(1)
                 
                 if(z <  Z_increments-1):
                     move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
+                    print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
+                    time.sleep((int(entry_delay_pics.get())-0))
                 elif(z ==  Z_increments-1):
                     print("Resetting motor Z by " + str((Z_increments-1)*Z_steps_per_increment))
                     move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments-1)*Z_steps_per_increment)
+                    time.sleep((int(entry_delay_pics.get())-0))
                     print("****************")
             if(x <  X_increments-1):
+                plt.plot(x, E)
                 move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
-            elif(y ==  Y_increments-1):                
+                print("**** moving E")
+                move_motor(motor = "E", direction = E_dir, step_type = "steps", steps = E) 
+                time.sleep((int(entry_delay_pics.get())-0))
+            elif(x ==  X_increments-1):                
                 print("Resetting motor X by " + str((X_increments-1)*X_steps_per_increment))
                 move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
+                                
+                print("Resetting motor E by " + str(E_min - E_total))
+                move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_min - E_total))
+                time.sleep((int(entry_delay_pics.get())+2))
+                
             
         if(y <  Y_increments-1):
             move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
-            time.sleep(1)
+            time.sleep((int(entry_delay_pics.get())+2))
         elif(y ==  Y_increments-1):                
             print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
             move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
-            time.sleep(1)
+            time.sleep((int(entry_delay_pics.get())+2))
                     
     print('Scan done!')
 
-        
-    
+
+
 def move_motor(motor, direction, step_type, steps=0):
-    
+
     global X_total
     global Y_total
     global Z_total
@@ -321,7 +373,7 @@ def move_motor(motor, direction, step_type, steps=0):
     
     # combine value to string to send to Arduino
     send_string = motor + "_" + direction + "_" + input_value + "\n"
-    print("serial command: " + send_string.rstrip())
+    # print("serial command: " + send_string.rstrip())
     
     # Send command to Arduino
     ser.write(str(send_string).encode())    
@@ -330,7 +382,7 @@ def move_motor(motor, direction, step_type, steps=0):
         line = ser.readline().decode('ascii').rstrip()
         # print(line)
         if(line == "0" or line == "1"):
-            print("exit status: " + line)
+            # print("exit status: " + line)
             # print(str(X_total))
             # pprint(str(Y_total))
             # pprint(str(Z_total))
@@ -517,6 +569,8 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     global Q_increments
     Q_increments = int(Q_it)
     Q_it_text.set(Q_it)
+    
+    
     print("*****************")
     print("X iterations: " + str(X_it))
     print("Y iterations: " + str(Y_it))
@@ -527,7 +581,8 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     
     
     
-# start_camera()
+
+start_camera()
 
 # Create GUI
 root = tk.Tk()
@@ -605,8 +660,10 @@ spacer_Q.grid(row=r, column=0)
 r = r+1
 button_start_cam = tk.Button(root, text="Start Camera", command=start_camera)
 button_start_cam.grid(row=r, column=0, columnspan=1)
+
 button_start_cam = tk.Button(root, text="Set Camera", command=set_camera)
 button_start_cam.grid(row=r, column=2, columnspan=1)
+
 button_stop_cam = tk.Button(root, text="Take Picture", command=lambda: take_picture(state = "preview"))
 button_stop_cam.grid(row=r, column=3, columnspan=1)
 
@@ -623,6 +680,13 @@ entry_gain = tk.Entry(root, width=7)
 new_text = "0"
 entry_gain.insert(0, new_text)
 entry_gain.grid(row=r, column=3)
+
+spacer_Q = tk.Label(root, text='delay betw. photos (s)')
+spacer_Q.grid(row=r, column=4)
+entry_delay_pics = tk.Entry(root, width=7)
+new_text = "1"
+entry_delay_pics.insert(0, new_text)
+entry_delay_pics.grid(row=r, column=5)
 
 # homing
 r = r+1
@@ -657,7 +721,7 @@ r = r+1
 button_X_L = tk.Button(root, text="<<< X", command=lambda: move_motor(motor = "X", direction = "L", step_type = "unit"))
 button_X_L.grid(row=r, column=0)
 entry_X = tk.Entry(root, width=7)
-new_text = "10"
+new_text = "45"
 entry_X.insert(0, new_text)
 entry_X.grid(row=r, column=1)
 button_X_R = tk.Button(root, text="X >>>", command=lambda: move_motor(motor = "X", direction = "R", step_type = "unit"))
@@ -666,24 +730,25 @@ spacer_X = tk.Label(root, text="°         ")
 spacer_X.grid(row=r, column=3)
 
 r = r+1
-button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = "R", step_type = "unit"))
+button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = "L", step_type = "unit"))
 button_Y_L.grid(row=r, column=0)
 entry_Y = tk.Entry(root, width=7)
 new_text = "10"
 entry_Y.insert(0, new_text)
 entry_Y.grid(row=r, column=1)
-button_Y_R = tk.Button(root, text="Y >>>", command=lambda: move_motor(motor = "Y", direction = "L", step_type = "unit"))
+button_Y_R = tk.Button(root, text="Y >>>", command=lambda: move_motor(motor = "Y", direction = "R", step_type = "unit"))
 button_Y_R.grid(row=r, column=2)
 spacer_Y = tk.Label(root, text="°         ")
 spacer_Y.grid(row=r, column=3)
+
 r = r+1
-button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = "R", step_type = "unit"))
+button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = "L", step_type = "unit"))
 button_Z_L.grid(row=r, column=0)
 entry_Z = tk.Entry(root, width=7)
 new_text = "1000"
 entry_Z.insert(0, new_text)
 entry_Z.grid(row=r, column=1)
-button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = "L", step_type = "unit"))
+button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = "R", step_type = "unit"))
 button_Z_R.grid(row=r, column=2)
 spacer_Z = tk.Label(root, text="um        ")
 spacer_Z.grid(row=r, column=3)
