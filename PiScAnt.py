@@ -40,39 +40,55 @@ steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
 steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
-iterations_start = 2
+iterations_start_X = 8
+iterations_start_Y = 3
+iterations_start_Z = 2
+# iterations_start_E = 2
+# iterations_start_Q = 2
 
 X_homed = "0"
 X_min = 0
 X_max = 0
 X_total = 0
-X_increments = iterations_start
+X_increments = iterations_start_X
 
 Y_homed = "0"
 Y_min = 0
 Y_max = 0
 Y_total = 0
-Y_increments = iterations_start
+Y_increments = iterations_start_Y
 
 Z_max_mm = 125
 Z_max_steps = round(Z_max_mm* steps_per_mm_Z) # 6250
 Z_homed = "0"
-Z_min = 0
-Z_max = 0
+Z_min_m45 = 0
+Z_max_m45 = 0
+Z_min_m0 = 0
+Z_max_m0 = 0
+Z_min_p45 = 0
+Z_max_p45 = 0
 Z_total = 0
-Z_increments = iterations_start
+Z_increments = iterations_start_Z
 
 E_homed = "0"
-E_min = 0
-E_max = 0
+E_min_m45 = 0
+E_max_m45 = 0
+E_min_m0 = 0
+E_max_m0 = 0
+E_min_p45 = 0
+E_max_p45 = 0
 E_total = 0
-E_increments = iterations_start
+E_increments = X_increments
 
 Q_homed = "0"
-Q_min = 0
-Q_max = 0
+Q_min_m45 = 0
+Q_max_m45 = 0
+Q_min_m0 = 0
+Q_max_m0 = 0
+Q_min_p45 = 0
+Q_max_p45 = 0
 Q_total = 0
-Q_increments = iterations_start
+Q_increments = X_increments
 
 def start_camera():
     print("Starting camera and preview...")
@@ -154,46 +170,63 @@ def start_scan():
     Y_steps_scan = Y_max-Y_min
     Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
     print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
-
+    
+    # initiate plot
+    plt.figure(figsize = (12,6))
+    
     # Z
-    Z_steps_scan = Z_max-Z_min
+    Z_steps_scan = Z_max_m45-Z_min_m45
     Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
     print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
 
-    # E
-    E_steps_scan = E_max-E_min
+    
+    # E sinus calculations
+    E_steps_scan_m45 = E_max_m45-E_min_m45
     
     # print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
-   
-    E_x_sin = np.linspace(0.5*np.pi, 2.5*np.pi, X_increments) # np.linspace(0, 2*np.pi, X_increments)
-    E_y_sin = np.sin(E_x_sin) * E_steps_scan
+    # ~ E_increments = X_increments <- defined at beginning of script
+    E_x_sin_m45 = np.linspace(0.5*np.pi, 2.5*np.pi, E_increments) # np.linspace(0, 2*np.pi, X_increments)
+    E_y_sin_m45 = np.sin(E_x_sin_m45) * E_steps_scan_m45
+    #print("E_y_sin_m45")
+    #print(E_y_sin_m45)
+    
     
     plt.ion()
-    plt.plot(E_x_sin, E_y_sin)
+    plt.subplot(332)
+    plt.plot(E_x_sin_m45, E_y_sin_m45)
     
-    #print("E_y_sin")
-    #print(E_y_sin)
-    E_y_sin_steps = [j-i for i, j in zip(E_y_sin[:-1], E_y_sin[1:])]
-    E_y_sin_steps.append(E_y_sin_steps[0])
-    E_y_sin_steps = [x / 2 for x in E_y_sin_steps]
+    E_y_sin_m45_steps = [j-i for i, j in zip(E_y_sin_m45[:-1], E_y_sin_m45[1:])]
+    E_y_sin_m45_steps.append(E_y_sin_m45_steps[0])
+    E_y_sin_m45_steps = [x / 2 for x in E_y_sin_m45_steps]
+    #print("E_y_sin_m45_steps")
+    #print(E_y_sin_m45_steps)
+        
+    plt.plot(E_x_sin_m45, E_y_sin_m45_steps)
+    plt.show()
     
-    print("E_y_sin_steps")
-    print(E_y_sin_steps)
+       
+    # Q sinus calculations
+    Q_steps_scan_m45 = Q_max_m45-Q_min_m45
+    
+    # print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
+    Q_x_sin_m45 = np.linspace(0*np.pi, 2*np.pi, Q_increments) # np.linspace(0, 2*np.pi, X_increments)
+    Q_y_sin_m45 = np.sin(Q_x_sin_m45) * Q_steps_scan_m45
+    #print("Q_y_sin_m45")
+    #print(Q_y_sin_m45)
+    
+    plt.subplot(333)
+    plt.plot(Q_x_sin_m45, Q_y_sin_m45)
     
     
-    plt.plot(E_x_sin, E_y_sin_steps)
-    
+    Q_y_sin_m45_steps = [j-i for i, j in zip(Q_y_sin_m45[:-1], Q_y_sin_m45[1:])]
+    Q_y_sin_m45_steps.append(Q_y_sin_m45_steps[0])
+    Q_y_sin_m45_steps = [x / (2) for x in Q_y_sin_m45_steps]
+    #print("Q_y_sin_m45_steps")
+    #print(Q_y_sin_m45_steps)
+        
+    plt.plot(Q_x_sin_m45, Q_y_sin_m45_steps)
     plt.show()
     plt.pause(1)
-    
-    
-    
-    # # Q
-    # Q_steps_scan = Q_max-Q_min
-    # Q_steps_per_increment = round(Q_steps_scan/(Q_increments-1))
-    # print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
-    
-    
     
     
     time.sleep(2)
@@ -205,9 +238,9 @@ def start_scan():
     print("Moving all motors to start position.")
     move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_min))
     move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_min))
-    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min))
-    move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min))
-    move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min))
+    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min_m45))
+    move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min_m45))
+    move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min_m45))
     
     time.sleep(2)
     
@@ -221,20 +254,31 @@ def start_scan():
     for y in range(Y_increments):
         for x in range(X_increments):
             e = x
-            print(e)
-            E = round(E_y_sin_steps[e])
+            # ~ print(e)
+            E = round(E_y_sin_m45_steps[e])
             if(E >= 0):
                 E_dir = "L"
             if(E <= 0):
                 E_dir = "R"
             E = abs(E)
-            print(E)
+            # ~ print(E)
+            
+            q = x
+            Q = round(Q_y_sin_m45_steps[e])
+            if(Q >= 0):
+                Q_dir = "L"
+            if(Q <= 0):
+                Q_dir = "R"
+            Q = abs(Q)
+            # ~ print(Q)
+            
             for z in range(Z_increments):
                 
                 print("X = " + str(x))
                 print("Y = " + str(y))
                 print("Z = " + str(z))
                 print("E = " + str(e))
+                print("Q = " + str(q))
                 
                 take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
                 print("taking picture...")
@@ -250,26 +294,36 @@ def start_scan():
                     time.sleep((int(entry_delay_pics.get())-0))
                     print("****************")
             if(x <  X_increments-1):
-                plt.plot(x, E)
+                # ~ plt.plot(x, E)
                 move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
-                print("**** moving E")
+                
+                print("**** moving E and Q")
                 move_motor(motor = "E", direction = E_dir, step_type = "steps", steps = E) 
+                move_motor(motor = "Q", direction = Q_dir, step_type = "steps", steps = Q) 
+                print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
                 time.sleep((int(entry_delay_pics.get())-0))
+                
             elif(x ==  X_increments-1):                
                 print("Resetting motor X by " + str((X_increments-1)*X_steps_per_increment))
                 move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
                                 
-                print("Resetting motor E by " + str(E_min - E_total))
-                move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_min - E_total))
+                print("Resetting motor E by " + str(E_min_m45 - E_total))
+                move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_min_m45 - E_total))
+                
+                print("Resetting motor Q by " + str(Q_min_m45 - Q_total))
+                move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_min_m45 - Q_total))
+                print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
                 time.sleep((int(entry_delay_pics.get())+2))
                 
             
         if(y <  Y_increments-1):
             move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
+            print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
             time.sleep((int(entry_delay_pics.get())+2))
         elif(y ==  Y_increments-1):                
             print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
             move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
+            print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
             time.sleep((int(entry_delay_pics.get())+2))
                     
     print('Scan done!')
@@ -391,52 +445,52 @@ def move_motor(motor, direction, step_type, steps=0):
             return
         time.sleep(0.01)
 
-def home_motor(motor):
-    send_string = motor + "_home_0" + "\n"
-    print("serial command: " + send_string)
+# def home_motor(motor):
+    # send_string = motor + "_home_0" + "\n"
+    # print("serial command: " + send_string)
 
-    # Send command to Arduino
-    ser.write(str(send_string).encode())
+    # # Send command to Arduino
+    # ser.write(str(send_string).encode())
     
-    # flush input buffer
-    ser.reset_input_buffer()
+    # # flush input buffer
+    # ser.reset_input_buffer()
     
-    while(1):
-        line = ser.readline().decode('ascii').rstrip()
-        if(line == "2"):
-            if(motor == "X"):
-                global X_homed
-                X_homed = "1"
-                global X_total
-                X_total = 0
-                print("X homed set to " + X_homed)
-            elif(motor == "Y"):
-                global Y_homed
-                Y_homed = "1"
-                global Y_total
-                Y_total = 0
-                print("Y homed set to " + Y_homed)
-            elif(motor == "Z"):
-                global Z_homed
-                Z_homed = "1"
-                global Z_total
-                Z_total = 0
-                print("Z homed set to " + Z_homed)
-            elif(motor == "E"):
-                global E_homed
-                E_homed = "1"
-                global E_total
-                E_total = 0
-                print("E homed set to " + E_homed)
-            elif(motor == "Q"):
-                global Q_homed
-                Q_homed = "1"
-                global Q_total
-                Q_total = 0
-                print("Q homed set to " + Q_homed)
-            print("exit status: " + line)
-            return
-        time.sleep(0.01)
+    # while(1):
+        # line = ser.readline().decode('ascii').rstrip()
+        # if(line == "2"):
+            # if(motor == "X"):
+                # global X_homed
+                # X_homed = "1"
+                # global X_total
+                # X_total = 0
+                # print("X homed set to " + X_homed)
+            # elif(motor == "Y"):
+                # global Y_homed
+                # Y_homed = "1"
+                # global Y_total
+                # Y_total = 0
+                # print("Y homed set to " + Y_homed)
+            # elif(motor == "Z"):
+                # global Z_homed
+                # Z_homed = "1"
+                # global Z_total
+                # Z_total = 0
+                # print("Z homed set to " + Z_homed)
+            # elif(motor == "E"):
+                # global E_homed
+                # E_homed = "1"
+                # global E_total
+                # E_total = 0
+                # print("E homed set to " + E_homed)
+            # elif(motor == "Q"):
+                # global Q_homed
+                # Q_homed = "1"
+                # global Q_total
+                # Q_total = 0
+                # print("Q homed set to " + Q_homed)
+            # print("exit status: " + line)
+            # return
+        # time.sleep(0.01)
 
 def deactivate_motors():
     send_string = "x_deactivate_x" + "\n"
@@ -490,7 +544,7 @@ def create_project():
     # create project directory
     os.makedirs(project_name, exist_ok=True) # , exist_ok=True
 
-def set_motor(motor, direction):
+def set_motor(motor, direction, pos = "general"):
     # Get values from input fields
     if(motor == "X"):
         print("Setting " + direction + " for motor " + motor + " to " + str(X_total))
@@ -516,42 +570,120 @@ def set_motor(motor, direction):
             Y_max = Y_total
             global Y_max_text
             Y_max_text.set(Y_max)
+            
     elif(motor == "Z"):
-        print("Setting " + direction + " for motor " + motor + " to " + str(Z_total))
-        if(direction == "min"):
-            global Z_min
-            Z_min = Z_total
-            global Z_min_text
-            Z_min_text.set(Z_min)
-        elif(direction == "max"):
-            global Z_max
-            Z_max = Z_total
-            global Z_max_text
-            Z_max_text.set(Z_max)
+        if(pos == "m45"):
+            print("Setting " + direction + " for motor " + motor + " at -45° to " + str(Z_total))
+            if(direction == "min"):
+                global Z_min_m45
+                Z_min_m45 = Z_total
+                global Z_min_m45_text
+                Z_min_m45_text.set(Z_min_m45)
+            elif(direction == "max"):
+                global Z_max_m45
+                Z_max_m45 = Z_total
+                global Z_max_m45_text
+                Z_max_m45_text.set(Z_max_m45)
+        elif(pos == "m0"):
+            print("Setting " + direction + " for motor " + motor + " at 0° to " + str(Z_total))
+            if(direction == "min"):
+                global Z_min_m0
+                Z_min_m0 = Z_total
+                global Z_min_m0_text
+                Z_min_m0_text.set(Z_min_m0)
+            elif(direction == "max"):
+                global Z_max_m0
+                Z_max_m0 = Z_total
+                global Z_max_m0_text
+                Z_max_m0_text.set(Z_max_m0)
+        elif(pos == "p45"):
+            print("Setting " + direction + " for motor " + motor + " at +45° to " + str(Z_total))
+            if(direction == "min"):
+                global Z_min_p45
+                Z_min_p45 = Z_total
+                global Z_min_p45_text
+                Z_min_p45_text.set(Z_min_p45)
+            elif(direction == "max"):
+                global Z_max_p45
+                Z_max_p45 = Z_total
+                global Z_max_p45_text
+                Z_max_p45_text.set(Z_max_p45)
+            
     elif(motor == "E"):
-        print("Setting " + direction + " for motor " + motor + " to " + str(E_total))
-        if(direction == "min"):
-            global E_min
-            E_min = E_total
-            global E_min_text
-            E_min_text.set(E_min)
-        elif(direction == "max"):
-            global E_max
-            E_max = E_total
-            global E_max_text
-            E_max_text.set(E_max)
+        if(pos == "m45"):
+            print("Setting " + direction + " for motor " + motor + " at -45° to " + str(E_total))
+            if(direction == "min"):
+                global E_min_m45
+                E_min_m45 = E_total
+                global E_min_m45_text
+                E_min_m45_text.set(E_min_m45)
+            elif(direction == "max"):
+                global E_max_m45
+                E_max_m45 = E_total
+                global E_max_m45_text
+                E_max_m45_text.set(E_max_m45)
+        elif(pos == "m0"):
+            print("Setting " + direction + " for motor " + motor + " at 0° to " + str(E_total))
+            if(direction == "min"):
+                global E_min_m0
+                E_min_m0 = E_total
+                global E_min_m0_text
+                E_min_m0_text.set(E_min_m0)
+            elif(direction == "max"):
+                global E_max_m0
+                E_max_m0 = E_total
+                global E_max_m0_text
+                E_max_m0_text.set(E_max_m0)
+        elif(pos == "p45"):
+            print("Setting " + direction + " for motor " + motor + " at +45° to " + str(E_total))
+            if(direction == "min"):
+                global E_min_p45
+                E_min_p45 = E_total
+                global E_min_p45_text
+                E_min_p45_text.set(E_min_p45)
+            elif(direction == "max"):
+                global E_max_p45
+                E_max_p45 = E_total
+                global E_max_p45_text
+                E_max_p45_text.set(E_max_p45)
+                
     elif(motor == "Q"):
-        print("Setting " + direction + " for motor " + motor + " to " + str(Q_total))
-        if(direction == "min"):
-            global Q_min
-            Q_min = Q_total
-            global Q_min_text
-            Q_min_text.set(Q_min)
-        elif(direction == "max"):
-            global Q_max
-            Q_max = Q_total
-            global Q_max_text
-            Q_max_text.set(Q_max)
+        if(pos == "m45"):
+            print("Setting " + direction + " for motor " + motor + " at -45° to " + str(Q_total))
+            if(direction == "min"):
+                global Q_min_m45
+                Q_min_m45 = Q_total
+                global Q_min_m45_text
+                Q_min_m45_text.set(Q_min_m45)
+            elif(direction == "max"):
+                global Q_max_m45
+                Q_max_m45 = Q_total
+                global Q_max_m45_text
+                Q_max_m45_text.set(Q_max_m45)
+        elif(pos == "m0"):
+            print("Setting " + direction + " for motor " + motor + " at 0° to " + str(Q_total))
+            if(direction == "min"):
+                global Q_min_m0
+                Q_min_m0 = Q_total
+                global Q_min_m0_text
+                Q_min_m0_text.set(Q_min_m0)
+            elif(direction == "max"):
+                global Q_max_m0
+                Q_max_m0 = Q_total
+                global Q_max_m0_text
+                Q_max_m0_text.set(Q_max_m0)
+        elif(pos == "p45"):
+            print("Setting " + direction + " for motor " + motor + " at +45° to " + str(Q_total))
+            if(direction == "min"):
+                global Q_min_p45
+                Q_min_p45 = Q_total
+                global Q_min_p45_text
+                Q_min_p45_text.set(Q_min_p45)
+            elif(direction == "max"):
+                global Q_max_p45
+                Q_max_p45 = Q_total
+                global Q_max_p45_text
+                Q_max_p45_text.set(Q_max_p45)
             
 def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     global X_increments
@@ -563,26 +695,26 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     global Z_increments
     Z_increments = int(Z_it)
     Z_it_text.set(Z_it)
-    global E_increments
-    E_increments = int(E_it)
-    E_it_text.set(E_it)
-    global Q_increments
-    Q_increments = int(Q_it)
-    Q_it_text.set(Q_it)
+    # ~ global E_increments
+    # ~ E_increments = int(E_it)
+    # ~ E_it_text.set(E_it)
+    # ~ global Q_increments
+    # ~ Q_increments = int(Q_it)
+    # ~ Q_it_text.set(Q_it)
     
     
     print("*****************")
     print("X iterations: " + str(X_it))
     print("Y iterations: " + str(Y_it))
     print("Z iterations: " + str(Z_it))
-    print("E iterations: " + str(E_it))
-    print("Q iterations: " + str(Q_it))
+    print("E (=X) iterations: " + str(X_it))
+    print("Q (=X) iterations: " + str(X_it))
     print("*****************")
     
     
     
 
-start_camera()
+# start_camera()
 
 # Create GUI
 root = tk.Tk()
@@ -599,20 +731,50 @@ Y_min_text.set(Y_min)
 Y_max_text = tk.IntVar()
 Y_max_text.set(Y_max)
 
-Z_min_text = tk.IntVar()
-Z_min_text.set(Z_min)
-Z_max_text = tk.IntVar()
-Z_max_text.set(Z_max)
+Z_min_m45_text = tk.IntVar()
+Z_min_m45_text.set(Z_min_m45)
+Z_max_m45_text = tk.IntVar()
+Z_max_m45_text.set(Z_max_m45)
 
-E_min_text = tk.IntVar()
-E_min_text.set(E_min)
-E_max_text = tk.IntVar()
-E_max_text.set(E_max)
+Z_min_m0_text = tk.IntVar()
+Z_min_m0_text.set(Z_min_m0)
+Z_max_m0_text = tk.IntVar()
+Z_max_m0_text.set(Z_max_m0)
 
-Q_min_text = tk.IntVar()
-Q_min_text.set(Q_min)
-Q_max_text = tk.IntVar()
-Q_max_text.set(Q_max)
+Z_min_p45_text = tk.IntVar()
+Z_min_p45_text.set(Z_min_p45)
+Z_max_p45_text = tk.IntVar()
+Z_max_p45_text.set(Z_max_p45)
+
+E_min_m45_text = tk.IntVar()
+E_min_m45_text.set(E_min_m45)
+E_max_m45_text = tk.IntVar()
+E_max_m45_text.set(E_max_m45)
+
+E_min_m0_text = tk.IntVar()
+E_min_m0_text.set(E_min_m0)
+E_max_m0_text = tk.IntVar()
+E_max_m0_text.set(E_max_m0)
+
+E_min_p45_text = tk.IntVar()
+E_min_p45_text.set(E_min_p45)
+E_max_p45_text = tk.IntVar()
+E_max_p45_text.set(E_max_p45)
+
+Q_min_m45_text = tk.IntVar()
+Q_min_m45_text.set(Q_min_m45)
+Q_max_m45_text = tk.IntVar()
+Q_max_m45_text.set(Q_max_m45)
+
+Q_min_m0_text = tk.IntVar()
+Q_min_m0_text.set(Q_min_m0)
+Q_max_m0_text = tk.IntVar()
+Q_max_m0_text.set(Q_max_m0)
+
+Q_min_p45_text = tk.IntVar()
+Q_min_p45_text.set(Q_min_p45)
+Q_max_p45_text = tk.IntVar()
+Q_max_p45_text.set(Q_max_p45)
 
 X_it_text = tk.IntVar()
 X_it_text.set(X_increments)
@@ -630,8 +792,8 @@ screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
 # calculate position x and y coordinates
-width = 800
-height = 700
+width = 700
+height = 1000
 x = (screen_width/3) - (width/2)
 y = (0) - (height/2) # screen_height/2
 root.geometry('%dx%d+%d+%d' % (width, height, x, y))
@@ -649,6 +811,11 @@ entry_project.insert(0, new_text)
 entry_project.grid(row=r, column=1)
 button_project = tk.Button(root, text="Create Project", command=lambda: create_project())
 button_project.grid(row=r, column=2)
+
+# Create submit button
+r = 1
+submit_button = tk.Button(root, text="Start Scanning!", command=start_scan)
+submit_button.grid(row=r, column=5, columnspan=2)
 
 # Camera settings
 r = r+1
@@ -681,32 +848,49 @@ new_text = "0"
 entry_gain.insert(0, new_text)
 entry_gain.grid(row=r, column=3)
 
-spacer_Q = tk.Label(root, text='delay betw. photos (s)')
+spacer_Q = tk.Label(root, text='photo delay (s)')
 spacer_Q.grid(row=r, column=4)
 entry_delay_pics = tk.Entry(root, width=7)
 new_text = "1"
 entry_delay_pics.insert(0, new_text)
 entry_delay_pics.grid(row=r, column=5)
 
-# homing
+# Motor energy
 r = r+1
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
-spacer_Q = tk.Label(root, text="Homing")
+spacer_Q = tk.Label(root, text="Motor energy")
 spacer_Q.grid(row=r, column=0)
+
 r = r+1
-# home_X = tk.Button(root, text="Home X", command=lambda: home_motor(motor = "X"))
-# home_X.grid(row=r, column=0)
-home_Y = tk.Button(root, text="Home Y", command=lambda: home_motor(motor = "Y"))
-home_Y.grid(row=r, column=0)
-home_Z = tk.Button(root, text="Home Z", command=lambda: home_motor(motor = "Z"))
-home_Z.grid(row=r, column=1)
+button_start_cam = tk.Button(root, text="Activate motors", command=activate_motors)
+button_start_cam.grid(row=r, column=0, columnspan=2)
+button_stop_cam = tk.Button(root, text="Deactivate motors", command=deactivate_motors)
+button_stop_cam.grid(row=r, column=2, columnspan=2)
+
 r = r+1
-home_E = tk.Button(root, text="Home E", command=lambda: home_motor(motor = "E"))
-home_E.grid(row=r, column=0)
-home_Q = tk.Button(root, text="Home Q", command=lambda: home_motor(motor = "Q"))
-home_Q.grid(row=r, column=1)
+row_spacer = tk.Label(root, text="        ")
+
+# # homing
+# r = r+1
+# spacer_Q = tk.Label(root, text="   ")
+# spacer_Q.grid(row=r, column=0)
+# r = r+1
+# spacer_Q = tk.Label(root, text="Homing")
+# spacer_Q.grid(row=r, column=0)
+# r = r+1
+# # home_X = tk.Button(root, text="Home X", command=lambda: home_motor(motor = "X"))
+# # home_X.grid(row=r, column=0)
+# home_Y = tk.Button(root, text="Home Y", command=lambda: home_motor(motor = "Y"))
+# home_Y.grid(row=r, column=0)
+# home_Z = tk.Button(root, text="Home Z", command=lambda: home_motor(motor = "Z"))
+# home_Z.grid(row=r, column=1)
+# r = r+1
+# home_E = tk.Button(root, text="Home E", command=lambda: home_motor(motor = "E"))
+# home_E.grid(row=r, column=0)
+# home_Q = tk.Button(root, text="Home Q", command=lambda: home_motor(motor = "Q"))
+# home_Q.grid(row=r, column=1)
 
 # Motor controls
 r = r+1
@@ -778,144 +962,199 @@ spacer_Q = tk.Label(root, text="um        ")
 spacer_Q.grid(row=r, column=3)
 
 
-
-# Motor ranges
-r = r_motor_controls
-spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=4)
-r = r+1
-spacer_Q = tk.Label(root, text="Motor ranges")
-spacer_Q.grid(row=r, column=4)
-r = r+1
-set_X_min = tk.Button(root, text="Set X min", command=lambda: set_motor(motor = "X", direction = "min"))
-set_X_min.grid(row=r, column=4)
-X_min_label = tk.Label(root, textvariable=X_min_text)
-X_min_label.grid(row=r, column=5)
-X_max_label = tk.Label(root, textvariable=X_max_text)
-X_max_label.grid(row=r, column=6)
-set_X_max = tk.Button(root, text="Set X max", command=lambda: set_motor(motor = "X", direction = "max"))
-set_X_max.grid(row=r, column=7)
-r = r+1
-set_Y_min = tk.Button(root, text="Set Y min", command=lambda: set_motor(motor = "Y", direction = "min"))
-set_Y_min.grid(row=r, column=4)
-Y_min_label = tk.Label(root, textvariable=Y_min_text)
-Y_min_label.grid(row=r, column=5)
-Y_max_label = tk.Label(root, textvariable=Y_max_text)
-Y_max_label.grid(row=r, column=6)
-set_Y_max = tk.Button(root, text="Set Y max", command=lambda: set_motor(motor = "Y", direction = "max"))
-set_Y_max.grid(row=r, column=7)
-r = r+1
-set_Z_min = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min"))
-set_Z_min.grid(row=r, column=4)
-Z_min_label = tk.Label(root, textvariable=Z_min_text)
-Z_min_label.grid(row=r, column=5)
-Z_max_label = tk.Label(root, textvariable=Z_max_text)
-Z_max_label.grid(row=r, column=6)
-set_Z_max = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max"))
-set_Z_max.grid(row=r, column=7)
-r = r+1
-set_E_min = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min"))
-set_E_min.grid(row=r, column=4)
-E_min_label = tk.Label(root, textvariable=E_min_text)
-E_min_label.grid(row=r, column=5)
-E_max_label = tk.Label(root, textvariable=E_max_text)
-E_max_label.grid(row=r, column=6)
-set_E_max = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max"))
-set_E_max.grid(row=r, column=7)
-r = r+1
-set_Q_min = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min"))
-set_Q_min.grid(row=r, column=4)
-Q_min_label = tk.Label(root, textvariable=Q_min_text)
-Q_min_label.grid(row=r, column=5)
-Q_max_label = tk.Label(root, textvariable=Q_max_text)
-Q_max_label.grid(row=r, column=6)
-set_Q_max = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max"))
-set_Q_max.grid(row=r, column=7)
-
-
 # Iterations
 r = r_motor_controls
 spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=8)
+spacer_Q.grid(row=r, column=4)
 r = r+1
 spacer_Q = tk.Label(root, text="Iterations")
-spacer_Q.grid(row=r, column=8)
+spacer_Q.grid(row=r, column=4)
 
-# Set
+# Iterations Set
 set_iterations_button = tk.Button(root, text="Set", command=lambda: set_iterations(X_it=entry_X_it.get(), Y_it=entry_Y_it.get(), Z_it=entry_Z_it.get(), E_it=entry_E_it.get(), Q_it=entry_Q_it.get()))
-set_iterations_button.grid(row=r, column=9)
+set_iterations_button.grid(row=r, column=5)
 
-# Settings
+# Iterations Settings
 r = r+1
 entry_X_it = tk.Entry(root, width=5)
-new_text = str(iterations_start)
+new_text = str(iterations_start_X)
 entry_X_it.insert(0, new_text)
-entry_X_it.grid(row=r, column=8)
+entry_X_it.grid(row=r, column=4)
 X_it_label = tk.Label(root, textvariable=X_it_text)
-X_it_label.grid(row=r, column=9)
+X_it_label.grid(row=r, column=5)
 
 
 r = r+1
 entry_Y_it = tk.Entry(root, width=5)
-new_text = str(iterations_start)
+new_text = str(iterations_start_Y)
 entry_Y_it.insert(0, new_text)
-entry_Y_it.grid(row=r, column=8)
+entry_Y_it.grid(row=r, column=4)
 Y_it_label = tk.Label(root, textvariable=Y_it_text)
-Y_it_label.grid(row=r, column=9)
+Y_it_label.grid(row=r, column=5)
 
 r = r+1
 entry_Z_it = tk.Entry(root, width=5)
-new_text = str(iterations_start)
+new_text = str(iterations_start_Z)
 entry_Z_it.insert(0, new_text)
-entry_Z_it.grid(row=r, column=8)
+entry_Z_it.grid(row=r, column=4)
 Z_it_label = tk.Label(root, textvariable=Z_it_text)
-Z_it_label.grid(row=r, column=9)
+Z_it_label.grid(row=r, column=5)
 
+# ~ r = r+1
+# ~ entry_E_it = tk.Entry(root, width=5)
+# ~ new_text = str(iterations_start)
+# ~ entry_E_it.insert(0, new_text)
+# ~ entry_E_it.grid(row=r, column=4)
+# ~ E_it_label = tk.Label(root, textvariable=E_it_text)
+# ~ E_it_label.grid(row=r, column=5)
+
+# ~ r = r+1
+# ~ entry_Q_it = tk.Entry(root, width=5)
+# ~ new_text = str(iterations_start)
+# ~ entry_Q_it.insert(0, new_text)
+# ~ entry_Q_it.grid(row=r, column=4)
+# ~ Q_it_label = tk.Label(root, textvariable=Q_it_text)
+# ~ Q_it_label.grid(row=r, column=5)
+
+
+
+# Motor ranges general
 r = r+1
-entry_E_it = tk.Entry(root, width=5)
-new_text = str(iterations_start)
-entry_E_it.insert(0, new_text)
-entry_E_it.grid(row=r, column=8)
-E_it_label = tk.Label(root, textvariable=E_it_text)
-E_it_label.grid(row=r, column=9)
-
-r = r+1
-entry_Q_it = tk.Entry(root, width=5)
-new_text = str(iterations_start)
-entry_Q_it.insert(0, new_text)
-entry_Q_it.grid(row=r, column=8)
-Q_it_label = tk.Label(root, textvariable=Q_it_text)
-Q_it_label.grid(row=r, column=9)
-
-
-# Motor energy
-r = r_motor_controls+7
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
-spacer_Q = tk.Label(root, text="Motor energy")
+spacer_Q = tk.Label(root, text="Motor ranges general")
+spacer_Q.grid(row=r, column=0)
+r = r+1
+set_X_min = tk.Button(root, text="Set X min", command=lambda: set_motor(motor = "X", direction = "min"))
+set_X_min.grid(row=r, column=0)
+X_min_label = tk.Label(root, textvariable=X_min_text)
+X_min_label.grid(row=r, column=1)
+X_max_label = tk.Label(root, textvariable=X_max_text)
+X_max_label.grid(row=r, column=2)
+set_X_max = tk.Button(root, text="Set X max", command=lambda: set_motor(motor = "X", direction = "max"))
+set_X_max.grid(row=r, column=3)
+r = r+1
+set_Y_min = tk.Button(root, text="Set Y min", command=lambda: set_motor(motor = "Y", direction = "min"))
+set_Y_min.grid(row=r, column=0)
+Y_min_label = tk.Label(root, textvariable=Y_min_text)
+Y_min_label.grid(row=r, column=1)
+Y_max_label = tk.Label(root, textvariable=Y_max_text)
+Y_max_label.grid(row=r, column=2)
+set_Y_max = tk.Button(root, text="Set Y max", command=lambda: set_motor(motor = "Y", direction = "max"))
+set_Y_max.grid(row=r, column=3)
+
+
+# Motor ranges -45°
+r = r+1
+r_motor_ranges = r
+spacer_Q = tk.Label(root, text="   ")
+spacer_Q.grid(row=r, column=0)
+r = r+1
+spacer_Q = tk.Label(root, text="Motor ranges -45°")
 spacer_Q.grid(row=r, column=0)
 
 r = r+1
-button_start_cam = tk.Button(root, text="Activate motors", command=activate_motors)
-button_start_cam.grid(row=r, column=0, columnspan=2)
-button_stop_cam = tk.Button(root, text="Deactivate motors", command=deactivate_motors)
-button_stop_cam.grid(row=r, column=2, columnspan=2)
+set_Z_min_m45 = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min", pos = "m45"))
+set_Z_min_m45.grid(row=r, column=0)
+Z_min_m45_label = tk.Label(root, textvariable=Z_min_m45_text)
+Z_min_m45_label.grid(row=r, column=1)
+Z_max_m45_label = tk.Label(root, textvariable=Z_max_m45_text)
+Z_max_m45_label.grid(row=r, column=2)
+set_Z_max_m45 = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max", pos = "m45"))
+set_Z_max_m45.grid(row=r, column=3)
+r = r+1
+set_E_min_m45 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "m45"))
+set_E_min_m45.grid(row=r, column=0)
+E_min_m45_label = tk.Label(root, textvariable=E_min_m45_text)
+E_min_m45_label.grid(row=r, column=1)
+E_max_m45_label = tk.Label(root, textvariable=E_max_m45_text)
+E_max_m45_label.grid(row=r, column=2)
+set_E_max_m45 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "m45"))
+set_E_max_m45.grid(row=r, column=3)
+r = r+1
+set_Q_min_m45 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "m45"))
+set_Q_min_m45.grid(row=r, column=0)
+Q_min_m45_label = tk.Label(root, textvariable=Q_min_m45_text)
+Q_min_m45_label.grid(row=r, column=1)
+Q_max_m45_label = tk.Label(root, textvariable=Q_max_m45_text)
+Q_max_m45_label.grid(row=r, column=2)
+set_Q_max_m45 = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max", pos = "m45"))
+set_Q_max_m45.grid(row=r, column=3)
+
+
+# Motor ranges 0°
+r = r+1
+spacer_Q = tk.Label(root, text="   ")
+spacer_Q.grid(row=r, column=0)
+r = r+1
+spacer_Q = tk.Label(root, text="Motor ranges 0°")
+spacer_Q.grid(row=r, column=0)
 
 r = r+1
-row_spacer = tk.Label(root, text="        ")
-row_spacer.grid(row=r, column=1)
+set_Z_min_m0 = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min", pos = "m0"))
+set_Z_min_m0.grid(row=r, column=0)
+Z_min_m0_label = tk.Label(root, textvariable=Z_min_m0_text)
+Z_min_m0_label.grid(row=r, column=1)
+Z_max_m0_label = tk.Label(root, textvariable=Z_max_m0_text)
+Z_max_m0_label.grid(row=r, column=2)
+set_Z_max_m0 = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max", pos = "m0"))
+set_Z_max_m0.grid(row=r, column=3)
+r = r+1
+set_E_min_m45_0 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "m0"))
+set_E_min_m45_0.grid(row=r, column=0)
+E_min_m0_label = tk.Label(root, textvariable=E_min_m0_text)
+E_min_m0_label.grid(row=r, column=1)
+E_max_m0_label = tk.Label(root, textvariable=E_max_m0_text)
+E_max_m0_label.grid(row=r, column=2)
+set_E_max_m0 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "m0"))
+set_E_max_m0.grid(row=r, column=3)
+r = r+1
+set_Q_min_0 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "m0"))
+set_Q_min_0.grid(row=r, column=0)
+Q_min_m0_label = tk.Label(root, textvariable=Q_min_m0_text)
+Q_min_m0_label.grid(row=r, column=1)
+Q_max_m0_label = tk.Label(root, textvariable=Q_max_m0_text)
+Q_max_m0_label.grid(row=r, column=2)
+set_Q_max_m0 = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max", pos = "m0"))
+set_Q_max_m0.grid(row=r, column=3)
+
+
+# Motor ranges +45°
+r = r+1
+spacer_Q = tk.Label(root, text="   ")
+spacer_Q.grid(row=r, column=0)
+r = r+1
+spacer_Q = tk.Label(root, text="Motor ranges +45°")
+spacer_Q.grid(row=r, column=0)
 
 r = r+1
-
-
+set_Z_min_p45 = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min", pos = "p45"))
+set_Z_min_p45.grid(row=r, column=0)
+Z_min_p45_label = tk.Label(root, textvariable=Z_min_p45_text)
+Z_min_p45_label.grid(row=r, column=1)
+Z_max_p45_label = tk.Label(root, textvariable=Z_max_p45_text)
+Z_max_p45_label.grid(row=r, column=2)
+set_Z_max_p45 = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max", pos = "p45"))
+set_Z_max_p45.grid(row=r, column=3)
 r = r+1
-row_spacer = tk.Label(root, text="        ")
-row_spacer.grid(row=r, column=1)
+set_E_min_m45_0 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "p45"))
+set_E_min_m45_0.grid(row=r, column=0)
+E_min_p45_label = tk.Label(root, textvariable=E_min_p45_text)
+E_min_p45_label.grid(row=r, column=1)
+E_max_p45_label = tk.Label(root, textvariable=E_max_p45_text)
+E_max_p45_label.grid(row=r, column=2)
+set_E_max_p45 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "p45"))
+set_E_max_p45.grid(row=r, column=3)
+r = r+1
+set_Q_min_p45 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "p45"))
+set_Q_min_p45.grid(row=r, column=0)
+Q_min_p45_label = tk.Label(root, textvariable=Q_min_p45_text)
+Q_min_p45_label.grid(row=r, column=1)
+Q_max_p45_label = tk.Label(root, textvariable=Q_max_p45_text)
+Q_max_p45_label.grid(row=r, column=2)
+set_Q_max_p45 = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max", pos = "p45"))
+set_Q_max_p45.grid(row=r, column=3)
 
-# Create submit button
-r = r+2
-submit_button = tk.Button(root, text="Start Scanning!", command=start_scan)
-submit_button.grid(row=r, column=0, columnspan=4)
 
 root.mainloop()
