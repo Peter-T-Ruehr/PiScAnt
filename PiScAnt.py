@@ -149,186 +149,6 @@ def take_picture(state = "scan", pos = ""):
             print("**********************")
             return
 
-def start_scan():
-    print("****************")
-    print("Scan process initalized.")
-    
-    global X_total
-    global Y_total
-    global Z_total
-    global E_total
-    global Q_total
-    
-    print("****************")
-    print("Calculating steps")
-    # X
-    X_steps_scan = X_max-X_min
-    X_steps_per_increment = round(X_steps_scan/(X_increments-1))
-    print(str(X_steps_per_increment) + " per " + str(X_increments) + " increments")
-    
-    # Y
-    Y_steps_scan = Y_max-Y_min
-    Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
-    print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
-    
-    # initiate plot
-    plt.figure(figsize = (12,6))
-    
-    # Z
-    Z_steps_scan = Z_max_m45-Z_min_m45
-    Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
-    print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
-
-    
-    # E sinus calculations
-    E_steps_scan_m45 = E_max_m45-E_min_m45
-    
-    # print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
-    # ~ E_increments = X_increments <- defined at beginning of script
-    E_x_sin_m45 = np.linspace(0.5*np.pi, 2.5*np.pi, E_increments) # np.linspace(0, 2*np.pi, X_increments)
-    E_y_sin_m45 = np.sin(E_x_sin_m45) * E_steps_scan_m45
-    #print("E_y_sin_m45")
-    #print(E_y_sin_m45)
-    
-    
-    plt.ion()
-    plt.subplot(332)
-    plt.plot(E_x_sin_m45, E_y_sin_m45)
-    
-    E_y_sin_m45_steps = [j-i for i, j in zip(E_y_sin_m45[:-1], E_y_sin_m45[1:])]
-    E_y_sin_m45_steps.append(E_y_sin_m45_steps[0])
-    E_y_sin_m45_steps = [x / 2 for x in E_y_sin_m45_steps]
-    #print("E_y_sin_m45_steps")
-    #print(E_y_sin_m45_steps)
-        
-    plt.plot(E_x_sin_m45, E_y_sin_m45_steps)
-    plt.show()
-    
-       
-    # Q sinus calculations
-    Q_steps_scan_m45 = Q_max_m45-Q_min_m45
-    
-    # print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
-    Q_x_sin_m45 = np.linspace(0*np.pi, 2*np.pi, Q_increments) # np.linspace(0, 2*np.pi, X_increments)
-    Q_y_sin_m45 = np.sin(Q_x_sin_m45) * Q_steps_scan_m45
-    #print("Q_y_sin_m45")
-    #print(Q_y_sin_m45)
-    
-    plt.subplot(333)
-    plt.plot(Q_x_sin_m45, Q_y_sin_m45)
-    
-    
-    Q_y_sin_m45_steps = [j-i for i, j in zip(Q_y_sin_m45[:-1], Q_y_sin_m45[1:])]
-    Q_y_sin_m45_steps.append(Q_y_sin_m45_steps[0])
-    Q_y_sin_m45_steps = [x / (2) for x in Q_y_sin_m45_steps]
-    #print("Q_y_sin_m45_steps")
-    #print(Q_y_sin_m45_steps)
-        
-    plt.plot(Q_x_sin_m45, Q_y_sin_m45_steps)
-    plt.show()
-    plt.pause(1)
-    
-    
-    time.sleep(2)
-    # move motors back to its minimum
-    # move_motors_to_start(motors = "all_motors")    
-    print("****************")
-    
-    # move all motors to start
-    print("Moving all motors to start position.")
-    move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_min))
-    move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_min))
-    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min_m45))
-    move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min_m45))
-    move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min_m45))
-    
-    time.sleep(2)
-    
-    e = 0
-    q = 0
-    
-    
-    print("****************")
-    
-    print("Starting scan!")
-    for y in range(Y_increments):
-        for x in range(X_increments):
-            e = x
-            # ~ print(e)
-            E = round(E_y_sin_m45_steps[e])
-            if(E >= 0):
-                E_dir = "L"
-            if(E <= 0):
-                E_dir = "R"
-            E = abs(E)
-            # ~ print(E)
-            
-            q = x
-            Q = round(Q_y_sin_m45_steps[e])
-            if(Q >= 0):
-                Q_dir = "L"
-            if(Q <= 0):
-                Q_dir = "R"
-            Q = abs(Q)
-            # ~ print(Q)
-            
-            for z in range(Z_increments):
-                
-                print("X = " + str(x))
-                print("Y = " + str(y))
-                print("Z = " + str(z))
-                print("E = " + str(e))
-                print("Q = " + str(q))
-                
-                take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
-                print("taking picture...")
-                # time.sleep(1)
-                
-                if(z <  Z_increments-1):
-                    move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
-                    print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
-                    time.sleep((int(entry_delay_pics.get())-0))
-                elif(z ==  Z_increments-1):
-                    print("Resetting motor Z by " + str((Z_increments-1)*Z_steps_per_increment))
-                    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments-1)*Z_steps_per_increment)
-                    time.sleep((int(entry_delay_pics.get())-0))
-                    print("****************")
-            if(x <  X_increments-1):
-                # ~ plt.plot(x, E)
-                move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
-                
-                print("**** moving E and Q")
-                move_motor(motor = "E", direction = E_dir, step_type = "steps", steps = E) 
-                move_motor(motor = "Q", direction = Q_dir, step_type = "steps", steps = Q) 
-                print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
-                time.sleep((int(entry_delay_pics.get())-0))
-                
-            elif(x ==  X_increments-1):                
-                print("Resetting motor X by " + str((X_increments-1)*X_steps_per_increment))
-                move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
-                                
-                print("Resetting motor E by " + str(E_min_m45 - E_total))
-                move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_min_m45 - E_total))
-                
-                print("Resetting motor Q by " + str(Q_min_m45 - Q_total))
-                move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_min_m45 - Q_total))
-                print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
-                time.sleep((int(entry_delay_pics.get())+2))
-                
-            
-        if(y <  Y_increments-1):
-            move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
-            print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
-            time.sleep((int(entry_delay_pics.get())+2))
-        elif(y ==  Y_increments-1):                
-            print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
-            move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
-            print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
-            time.sleep((int(entry_delay_pics.get())+2))
-                    
-    print('Scan done!')
-
-
 
 def move_motor(motor, direction, step_type, steps=0):
 
@@ -704,15 +524,196 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     
     
     print("*****************")
-    print("X iterations: " + str(X_it))
-    print("Y iterations: " + str(Y_it))
-    print("Z iterations: " + str(Z_it))
-    print("E (=X) iterations: " + str(X_it))
-    print("Q (=X) iterations: " + str(X_it))
+    print("X iterations: " + str(X_increments))
+    print("Y iterations: " + str(Y_increments))
+    print("Z iterations: " + str(Z_increments))
+    print("E (=X) iterations: " + str(X_increments))
+    print("Q (=X) iterations: " + str(X_increments))
     print("*****************")
     
     
     
+
+def start_scan():
+    print("****************")
+    print("Scan process initalized.")
+    
+    global X_total
+    global Y_total
+    global Z_total
+    global E_total
+    global Q_total
+    
+    print("****************")
+    print("Calculating steps")
+    # X
+    X_steps_scan = X_max-X_min
+    X_steps_per_increment = round(X_steps_scan/(X_increments-1))
+    print(str(X_steps_per_increment) + " per " + str(X_increments) + " increments")
+    
+    # Y
+    Y_steps_scan = Y_max-Y_min
+    Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
+    print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
+    
+    # initiate plot
+    plt.figure(figsize = (12,6))
+    
+    # Z
+    Z_steps_scan = Z_max_m45-Z_min_m45
+    Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
+    print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
+
+    
+    # E sinus calculations
+    E_steps_scan_m45 = E_max_m45-E_min_m45
+    
+    # print(str(E_steps_per_increment) + " per " + str(E_increments) + " increments")
+    E_increments = X_increments 
+    E_x_sin_m45 = np.linspace(0.5*np.pi, 2.5*np.pi, E_increments) # np.linspace(0, 2*np.pi, X_increments)
+    E_y_sin_m45 = np.sin(E_x_sin_m45) * E_steps_scan_m45
+    print(E_increments)
+    #print("E_y_sin_m45")
+    #print(E_y_sin_m45)
+    
+    
+    plt.ion()
+    plt.subplot(332)
+    plt.plot(E_x_sin_m45, E_y_sin_m45)
+    
+    E_y_sin_m45_steps = [j-i for i, j in zip(E_y_sin_m45[:-1], E_y_sin_m45[1:])]
+    E_y_sin_m45_steps.append(E_y_sin_m45_steps[0])
+    E_y_sin_m45_steps = [x / 2 for x in E_y_sin_m45_steps]
+    #print("E_y_sin_m45_steps")
+    #print(E_y_sin_m45_steps)
+        
+    plt.plot(E_x_sin_m45, [x * (2) for x in E_y_sin_m45_steps])
+    plt.show()
+    
+       
+    # Q sinus calculations
+    Q_steps_scan_m45 = Q_max_m45-Q_min_m45
+    
+    # print(str(Q_steps_per_increment) + " per " + str(Q_increments) + " increments")
+    Q_increments = X_increments 
+    Q_x_sin_m45 = np.linspace(0*np.pi, 2*np.pi, Q_increments) # np.linspace(0, 2*np.pi, X_increments)
+    Q_y_sin_m45 = np.sin(Q_x_sin_m45) * Q_steps_scan_m45
+    #print("Q_y_sin_m45")
+    #print(Q_y_sin_m45)
+    
+    plt.subplot(333)
+    plt.plot(Q_x_sin_m45, Q_y_sin_m45)
+    
+    
+    Q_y_sin_m45_steps = [j-i for i, j in zip(Q_y_sin_m45[:-1], Q_y_sin_m45[1:])]
+    Q_y_sin_m45_steps.append(Q_y_sin_m45_steps[0])
+    Q_y_sin_m45_steps = [x / (-2) for x in Q_y_sin_m45_steps]
+    #print("Q_y_sin_m45_steps")
+    #print(Q_y_sin_m45_steps)
+        
+    plt.plot(Q_x_sin_m45, [x * (2) for x in   ])
+    plt.show()
+    plt.pause(1)
+    
+    
+    time.sleep(2)
+    # move motors back to its minimum
+    # move_motors_to_start(motors = "all_motors")    
+    print("****************")
+    
+    # move all motors to start
+    print("Moving all motors to start position.")
+    move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_min))
+    move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_min))
+    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min_m45))
+    move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min_m45))
+    move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min_m45))
+    
+    time.sleep(2)
+    
+    e = 0
+    q = 0
+    
+    
+    print("****************")
+    
+    print("Starting scan!")
+    for y in range(Y_increments):
+        for x in range(X_increments):
+            e = x
+            # ~ print(e)
+            E = round(E_y_sin_m45_steps[e])
+            if(E >= 0):
+                E_dir = "L"
+            if(E <= 0):
+                E_dir = "R"
+            E = abs(E)
+            # ~ print(E)
+            
+            q = x
+            Q = round(Q_y_sin_m45_steps[e])
+            if(Q >= 0):
+                Q_dir = "L"
+            if(Q <= 0):
+                Q_dir = "R"
+            Q = abs(Q)
+            # ~ print(Q)
+            
+            for z in range(Z_increments):
+                
+                print("X = " + str(x))
+                print("Y = " + str(y))
+                print("Z = " + str(z))
+                print("E = " + str(e))
+                print("Q = " + str(q))
+                
+                take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z)+'_E'+str(e)+'_Q'+str(q))
+                print("taking picture...")
+                # time.sleep(1)
+                
+                if(z <  Z_increments-1):
+                    move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
+                    print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
+                    time.sleep((int(entry_delay_pics.get())-0))
+                elif(z ==  Z_increments-1):
+                    print("Resetting motor Z by " + str((Z_increments-1)*Z_steps_per_increment))
+                    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments-1)*Z_steps_per_increment)
+                    time.sleep((int(entry_delay_pics.get())-0))
+                    print("****************")
+            if(x <  X_increments-1):
+                # ~ plt.plot(x, E)
+                move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
+                
+                print("**** moving E and Q")
+                move_motor(motor = "E", direction = E_dir, step_type = "steps", steps = E) 
+                move_motor(motor = "Q", direction = Q_dir, step_type = "steps", steps = Q) 
+                print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
+                time.sleep((int(entry_delay_pics.get())-0))
+                
+            elif(x ==  X_increments-1):                
+                print("Resetting motor X by " + str((X_increments-1)*X_steps_per_increment))
+                move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
+                                
+                print("Resetting motor E by " + str(E_min_m45 - E_total))
+                move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_min_m45 - E_total))
+                
+                print("Resetting motor Q by " + str(Q_min_m45 - Q_total))
+                move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_min_m45 - Q_total))
+                print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
+                time.sleep((int(entry_delay_pics.get())+2))
+                
+            
+        if(y <  Y_increments-1):
+            move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
+            print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
+            time.sleep((int(entry_delay_pics.get())+2))
+        elif(y ==  Y_increments-1):                
+            print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
+            move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
+            print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
+            time.sleep((int(entry_delay_pics.get())+2))
+                    
+    print('Scan done!')
 
 # start_camera()
 
@@ -971,7 +972,7 @@ spacer_Q = tk.Label(root, text="Iterations")
 spacer_Q.grid(row=r, column=4)
 
 # Iterations Set
-set_iterations_button = tk.Button(root, text="Set", command=lambda: set_iterations(X_it=entry_X_it.get(), Y_it=entry_Y_it.get(), Z_it=entry_Z_it.get(), E_it=entry_E_it.get(), Q_it=entry_Q_it.get()))
+set_iterations_button = tk.Button(root, text="Set", command=lambda: set_iterations(X_it=entry_X_it.get(), Y_it=entry_Y_it.get(), Z_it=entry_Z_it.get(), E_it=entry_X_it.get(), Q_it=entry_X_it.get()))
 set_iterations_button.grid(row=r, column=5)
 
 # Iterations Settings
@@ -1000,26 +1001,26 @@ entry_Z_it.grid(row=r, column=4)
 Z_it_label = tk.Label(root, textvariable=Z_it_text)
 Z_it_label.grid(row=r, column=5)
 
-# ~ r = r+1
+r = r+1
 # ~ entry_E_it = tk.Entry(root, width=5)
 # ~ new_text = str(iterations_start)
 # ~ entry_E_it.insert(0, new_text)
 # ~ entry_E_it.grid(row=r, column=4)
-# ~ E_it_label = tk.Label(root, textvariable=E_it_text)
-# ~ E_it_label.grid(row=r, column=5)
+E_it_label = tk.Label(root, textvariable=X_it_text)
+E_it_label.grid(row=r, column=5)
 
-# ~ r = r+1
+r = r+1
 # ~ entry_Q_it = tk.Entry(root, width=5)
 # ~ new_text = str(iterations_start)
 # ~ entry_Q_it.insert(0, new_text)
 # ~ entry_Q_it.grid(row=r, column=4)
-# ~ Q_it_label = tk.Label(root, textvariable=Q_it_text)
-# ~ Q_it_label.grid(row=r, column=5)
+Q_it_label = tk.Label(root, textvariable=X_it_text)
+Q_it_label.grid(row=r, column=5)
 
 
 
 # Motor ranges general
-r = r+1
+r = r+1 
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
@@ -1065,13 +1066,13 @@ set_Z_max_m45 = tk.Button(root, text="Set Z max", command=lambda: set_motor(moto
 set_Z_max_m45.grid(row=r, column=3)
 r = r+1
 set_E_min_m45 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "m45"))
-set_E_min_m45.grid(row=r, column=0)
+set_E_min_m45.grid(row=r, column=1)
 E_min_m45_label = tk.Label(root, textvariable=E_min_m45_text)
-E_min_m45_label.grid(row=r, column=1)
+E_min_m45_label.grid(row=r, column=2)
 E_max_m45_label = tk.Label(root, textvariable=E_max_m45_text)
-E_max_m45_label.grid(row=r, column=2)
+E_max_m45_label.grid(row=r, column=3)
 set_E_max_m45 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "m45"))
-set_E_max_m45.grid(row=r, column=3)
+set_E_max_m45.grid(row=r, column=4)
 r = r+1
 set_Q_min_m45 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "m45"))
 set_Q_min_m45.grid(row=r, column=0)
