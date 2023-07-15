@@ -533,6 +533,14 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     
     
     
+    
+    
+def go_to_preset(X, Y):
+    print("presetting")
+    
+    
+    
+    
 
 def start_scan():
     print("****************")
@@ -611,7 +619,7 @@ def start_scan():
     #print("Q_y_sin_m45_steps")
     #print(Q_y_sin_m45_steps)
         
-    plt.plot(Q_x_sin_m45, [x * (2) for x in   ])
+    plt.plot(Q_x_sin_m45, [x * (2) for x in Q_y_sin_m45_steps])
     plt.show()
     plt.pause(1)
     
@@ -795,14 +803,16 @@ screen_height = root.winfo_screenheight()
 # calculate position x and y coordinates
 width = 700
 height = 1000
-x = (screen_width/3) - (width/2)
-y = (0) - (height/2) # screen_height/2
+# ~ x = (screen_width/3) - (width/2)
+x = 0
+# ~ y = (height/2) - screen_height/2 + 100
+y = 0 # height - screen_height + 100
 root.geometry('%dx%d+%d+%d' % (width, height, x, y))
 
 # Create Project
 r = 0
 spacer_Q = tk.Label(root, text="Project creation")
-spacer_Q.grid(row=r, column=0)
+spacer_Q.grid(row=r, column=0, columnspan=2)
 r = r+1
 spacer_project = tk.Label(root, text="Project name:")
 spacer_project.grid(row=r, column=0)
@@ -824,7 +834,7 @@ spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
 spacer_Q = tk.Label(root, text="Camera settings")
-spacer_Q.grid(row=r, column=0)
+spacer_Q.grid(row=r, column=0, columnspan=2)
 r = r+1
 button_start_cam = tk.Button(root, text="Start Camera", command=start_camera)
 button_start_cam.grid(row=r, column=0, columnspan=1)
@@ -862,7 +872,7 @@ spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
 spacer_Q = tk.Label(root, text="Motor energy")
-spacer_Q.grid(row=r, column=0)
+spacer_Q.grid(row=r, column=0, columnspan=2)
 
 r = r+1
 button_start_cam = tk.Button(root, text="Activate motors", command=activate_motors)
@@ -900,7 +910,7 @@ spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
 spacer_Q = tk.Label(root, text="Motor controls")
-spacer_Q.grid(row=r, column=0)
+spacer_Q.grid(row=r, column=0, columnspan=2)
 
 r = r+1
 button_X_L = tk.Button(root, text="<<< X", command=lambda: move_motor(motor = "X", direction = "L", step_type = "unit"))
@@ -1019,15 +1029,16 @@ Q_it_label.grid(row=r, column=5)
 
 
 
-# Motor ranges general
+# Choose position and (if already set) go to position
 r = r+1 
+# r_range_sets = r
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
-spacer_Q = tk.Label(root, text="Motor ranges general")
-spacer_Q.grid(row=r, column=0)
+spacer_Q = tk.Label(root, text="Set X and Y range")
+spacer_Q.grid(row=r, column=0, columnspan=4)
 r = r+1
-set_X_min = tk.Button(root, text="Set X min", command=lambda: set_motor(motor = "X", direction = "min"))
+set_X_min = tk.Button(root, text="Set X0", command=lambda: set_motor(motor = "X", direction = "min"))
 set_X_min.grid(row=r, column=0)
 X_min_label = tk.Label(root, textvariable=X_min_text)
 X_min_label.grid(row=r, column=1)
@@ -1036,7 +1047,7 @@ X_max_label.grid(row=r, column=2)
 set_X_max = tk.Button(root, text="Set X max", command=lambda: set_motor(motor = "X", direction = "max"))
 set_X_max.grid(row=r, column=3)
 r = r+1
-set_Y_min = tk.Button(root, text="Set Y min", command=lambda: set_motor(motor = "Y", direction = "min"))
+set_Y_min = tk.Button(root, text="Set Y0", command=lambda: set_motor(motor = "Y", direction = "min"))
 set_Y_min.grid(row=r, column=0)
 Y_min_label = tk.Label(root, textvariable=Y_min_text)
 Y_min_label.grid(row=r, column=1)
@@ -1046,116 +1057,33 @@ set_Y_max = tk.Button(root, text="Set Y max", command=lambda: set_motor(motor = 
 set_Y_max.grid(row=r, column=3)
 
 
+
 # Motor ranges -45°
 r = r+1
 r_motor_ranges = r
 spacer_Q = tk.Label(root, text="   ")
 spacer_Q.grid(row=r, column=0)
 r = r+1
-spacer_Q = tk.Label(root, text="Motor ranges -45°")
-spacer_Q.grid(row=r, column=0)
+spacer_Q = tk.Label(root, text="Choose position and go there")
+spacer_Q.grid(row=r, column=0, columnspan=4)
 
 r = r+1
-set_Z_min_m45 = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min", pos = "m45"))
+set_Z_min_m45 = tk.Button(root, text="Ymin; X0", command=lambda: go_to_preset(Y = "min", X = 0))
 set_Z_min_m45.grid(row=r, column=0)
-Z_min_m45_label = tk.Label(root, textvariable=Z_min_m45_text)
-Z_min_m45_label.grid(row=r, column=1)
-Z_max_m45_label = tk.Label(root, textvariable=Z_max_m45_text)
-Z_max_m45_label.grid(row=r, column=2)
-set_Z_max_m45 = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max", pos = "m45"))
-set_Z_max_m45.grid(row=r, column=3)
+set_Z_max_m45 = tk.Button(root, text="Ymin; X90", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_max_m45.grid(row=r, column=1)
+set_Z_max_m45 = tk.Button(root, text="set all positions", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_max_m45.grid(row=r, column=2, columnspan=2)
 r = r+1
-set_E_min_m45 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "m45"))
-set_E_min_m45.grid(row=r, column=1)
-E_min_m45_label = tk.Label(root, textvariable=E_min_m45_text)
-E_min_m45_label.grid(row=r, column=2)
-E_max_m45_label = tk.Label(root, textvariable=E_max_m45_text)
-E_max_m45_label.grid(row=r, column=3)
-set_E_max_m45 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "m45"))
-set_E_max_m45.grid(row=r, column=4)
+set_Z_min_m45 = tk.Button(root, text="Y0;    X0", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_min_m45.grid(row=r, column=0)
+set_Z_max_m45 = tk.Button(root, text="Y0;    X90", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_max_m45.grid(row=r, column=1)
 r = r+1
-set_Q_min_m45 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "m45"))
-set_Q_min_m45.grid(row=r, column=0)
-Q_min_m45_label = tk.Label(root, textvariable=Q_min_m45_text)
-Q_min_m45_label.grid(row=r, column=1)
-Q_max_m45_label = tk.Label(root, textvariable=Q_max_m45_text)
-Q_max_m45_label.grid(row=r, column=2)
-set_Q_max_m45 = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max", pos = "m45"))
-set_Q_max_m45.grid(row=r, column=3)
-
-
-# Motor ranges 0°
-r = r+1
-spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=0)
-r = r+1
-spacer_Q = tk.Label(root, text="Motor ranges 0°")
-spacer_Q.grid(row=r, column=0)
-
-r = r+1
-set_Z_min_m0 = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min", pos = "m0"))
-set_Z_min_m0.grid(row=r, column=0)
-Z_min_m0_label = tk.Label(root, textvariable=Z_min_m0_text)
-Z_min_m0_label.grid(row=r, column=1)
-Z_max_m0_label = tk.Label(root, textvariable=Z_max_m0_text)
-Z_max_m0_label.grid(row=r, column=2)
-set_Z_max_m0 = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max", pos = "m0"))
-set_Z_max_m0.grid(row=r, column=3)
-r = r+1
-set_E_min_m45_0 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "m0"))
-set_E_min_m45_0.grid(row=r, column=0)
-E_min_m0_label = tk.Label(root, textvariable=E_min_m0_text)
-E_min_m0_label.grid(row=r, column=1)
-E_max_m0_label = tk.Label(root, textvariable=E_max_m0_text)
-E_max_m0_label.grid(row=r, column=2)
-set_E_max_m0 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "m0"))
-set_E_max_m0.grid(row=r, column=3)
-r = r+1
-set_Q_min_0 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "m0"))
-set_Q_min_0.grid(row=r, column=0)
-Q_min_m0_label = tk.Label(root, textvariable=Q_min_m0_text)
-Q_min_m0_label.grid(row=r, column=1)
-Q_max_m0_label = tk.Label(root, textvariable=Q_max_m0_text)
-Q_max_m0_label.grid(row=r, column=2)
-set_Q_max_m0 = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max", pos = "m0"))
-set_Q_max_m0.grid(row=r, column=3)
-
-
-# Motor ranges +45°
-r = r+1
-spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=0)
-r = r+1
-spacer_Q = tk.Label(root, text="Motor ranges +45°")
-spacer_Q.grid(row=r, column=0)
-
-r = r+1
-set_Z_min_p45 = tk.Button(root, text="Set Z min", command=lambda: set_motor(motor = "Z", direction = "min", pos = "p45"))
-set_Z_min_p45.grid(row=r, column=0)
-Z_min_p45_label = tk.Label(root, textvariable=Z_min_p45_text)
-Z_min_p45_label.grid(row=r, column=1)
-Z_max_p45_label = tk.Label(root, textvariable=Z_max_p45_text)
-Z_max_p45_label.grid(row=r, column=2)
-set_Z_max_p45 = tk.Button(root, text="Set Z max", command=lambda: set_motor(motor = "Z", direction = "max", pos = "p45"))
-set_Z_max_p45.grid(row=r, column=3)
-r = r+1
-set_E_min_m45_0 = tk.Button(root, text="Set E min", command=lambda: set_motor(motor = "E", direction = "min", pos = "p45"))
-set_E_min_m45_0.grid(row=r, column=0)
-E_min_p45_label = tk.Label(root, textvariable=E_min_p45_text)
-E_min_p45_label.grid(row=r, column=1)
-E_max_p45_label = tk.Label(root, textvariable=E_max_p45_text)
-E_max_p45_label.grid(row=r, column=2)
-set_E_max_p45 = tk.Button(root, text="Set E max", command=lambda: set_motor(motor = "E", direction = "max", pos = "p45"))
-set_E_max_p45.grid(row=r, column=3)
-r = r+1
-set_Q_min_p45 = tk.Button(root, text="Set Q min", command=lambda: set_motor(motor = "Q", direction = "min", pos = "p45"))
-set_Q_min_p45.grid(row=r, column=0)
-Q_min_p45_label = tk.Label(root, textvariable=Q_min_p45_text)
-Q_min_p45_label.grid(row=r, column=1)
-Q_max_p45_label = tk.Label(root, textvariable=Q_max_p45_text)
-Q_max_p45_label.grid(row=r, column=2)
-set_Q_max_p45 = tk.Button(root, text="Set Q max", command=lambda: set_motor(motor = "Q", direction = "max", pos = "p45"))
-set_Q_max_p45.grid(row=r, column=3)
+set_Z_min_m45 = tk.Button(root, text="Ymax; X0", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_min_m45.grid(row=r, column=0)
+set_Z_max_m45 = tk.Button(root, text="Ymax; X90", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_max_m45.grid(row=r, column=1)
 
 
 root.mainloop()
