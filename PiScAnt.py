@@ -92,6 +92,8 @@ Q_max_p45 = 0
 Q_total = 0
 Q_increments = X_increments
 
+curr_preset = "N/A N/A N/A N/A"
+
 def start_camera():
     print("Starting camera and preview...")
     picam2.start_preview(Preview.QTGL)
@@ -226,6 +228,7 @@ def move_motor(motor, direction, step_type, steps=0):
                 E_total = E_total + steps
             elif(direction == "L"):
                 E_total = E_total - steps
+            print("Current E positon (move_motor): " + str(E_total))
         else:
             print("Please home motor E first.")
             return()
@@ -516,14 +519,52 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     
     
 def go_to_preset(X, Y):
-    print(X)
-    print(Y)
+    
+    # ~ global variables
     global X_min
     global Y_90
     global X_max
     global Y_min
     global Y_0
     global Y_max
+    global X_total
+    global Y_total
+    global Z
+    global E_total
+    global E_min_m45
+    global E_min_m0
+    global E_min_p45
+    global E_max_m45
+    global E_max_m0
+    global E_max_p45
+    global Q_total
+    global Q_min_m45
+    global Q_min_m0
+    global Q_min_p45
+    global Q_max_m45
+    global Q_max_m0
+    global Q_max_p45
+    global curr_preset
+    
+    # ~ define preset
+    if(Y == "min"):
+        if(X == 0):
+            curr_preset = "X 0 Y min"
+        elif(X == 90):
+            curr_preset = "X 90 Y min"
+    elif(Y == "0"):
+        if(X == 0):
+            curr_preset = "X 0 Y 0"
+        elif(X == 90):
+            curr_preset = "X 90 Y 0"
+    elif(Y == "max"):
+        if(X == 0):
+            curr_preset = "X 0 Y max"
+        elif(X == 90):
+            curr_preset = "X 90 Y max"
+    print(curr_preset)
+    
+    # ~ Y
     if(Y == "min"):
         curr_y_steps = Y_total - Y_min
         curr_motor = "Y"
@@ -563,6 +604,8 @@ def go_to_preset(X, Y):
         print("Moving " + curr_motor + " by " + str(curr_y_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
         
+        
+    # ~ X
     if(X == 0):
         curr_x_steps = X_total - X_min
         curr_motor = "X"
@@ -590,6 +633,200 @@ def go_to_preset(X, Y):
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
     
     
+    # ~ E
+    print("Current E position: " + str(E_total))
+    if(Y == "min"):
+        if(X == 0):
+            curr_e_steps = E_total - E_min_m45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_e_steps = E_total - E_max_m45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        
+        print("Moving " + curr_motor + " by " + str(curr_e_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
+        
+    elif(Y == "0"):
+        if(X == 0):
+            curr_e_steps = E_total - E_min_m0
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_e_steps = E_total - E_max_m0
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_e_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
+        
+    elif(Y == "max"):
+        if(X == 0):
+            curr_e_steps = E_total - E_min_p45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_e_steps = E_total - E_max_p45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_e_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
+        
+        
+        
+    # ~ Q
+    print("Current Q position: " + str(Q_total))
+    if(Y == "min"):
+        if(X == 0):
+            curr_q_steps = Q_total - Q_min_m45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_q_steps = Q_total - Q_max_m45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        
+        print("Moving " + curr_motor + " by " + str(curr_q_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
+        
+    elif(Y == "0"):
+        if(X == 0):
+            curr_q_steps = Q_total - Q_min_m0
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_q_steps = Q_total - Q_max_m0
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_q_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
+        
+    elif(Y == "max"):
+        if(X == 0):
+            curr_q_steps = Q_total - Q_min_p45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_q_steps = Q_total - Q_max_p45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_q_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
+    
+def set_Z_E_Q(curr_preset):
+    # ~ extract info from curr_preset
+    curr_X_pos = curr_preset.split()[1]
+    curr_Y_pos = curr_preset.split()[3]
+    print(curr_X_pos)
+    print(curr_Y_pos)
+    
+    global E_total
+    global E_min_m45
+    global E_min_m0
+    global E_min_p45
+    global E_max_m45
+    global E_max_m0
+    global E_max_p45
+    
+    global Q_total
+    global Q_min_m45
+    global Q_min_m0
+    global Q_min_p45
+    global Q_max_m45
+    global Q_max_m0
+    global Q_max_p45
+    
+    # ~ E&Q
+    if(curr_X_pos == str(0)):
+        # ~ E
+        print("Setting E for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(E_total))
+        E_min_m45 = E_total
+        E_min_m0 = E_total
+        E_min_p45 = E_total
+        
+        # ~ Q
+        print("Setting Q for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(Q_total))
+        Q_min_m45 = Q_total
+        Q_min_m0 = Q_total
+        Q_min_p45 = Q_total
+        
+    if(curr_X_pos == str(90)):
+        # ~ E
+        print("Setting E for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(E_total))
+        E_max_m45 = E_total
+        E_max_m0 = E_total
+        E_max_p45 = E_total
+        
+        # ~ Q
+        print("Setting Q for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(Q_total))
+        Q_max_m45 = Q_total
+        Q_max_m0 = Q_total
+        Q_max_p45 = Q_total
+        
     
     
 
@@ -1106,21 +1343,22 @@ spacer_Q = tk.Label(root, text="Go to position")
 spacer_Q.grid(row=r, column=0, columnspan=4)
 
 r = r+1
-set_Z_min_m45 = tk.Button(root, text="Ymin; X0", command=lambda: go_to_preset(Y = "min", X = 0))
+set_Z_min_m45 = tk.Button(root, text="X0; Ymin", command=lambda: go_to_preset(Y = "min", X = 0))
 set_Z_min_m45.grid(row=r, column=0)
-set_Z_max_m45 = tk.Button(root, text="Ymin; X90", command=lambda: go_to_preset(Y = "min", X = 90))
+set_Z_max_m45 = tk.Button(root, text="X90; Ymin", command=lambda: go_to_preset(Y = "min", X = 90))
 set_Z_max_m45.grid(row=r, column=1)
-set_Z_max_m45 = tk.Button(root, text="set Z, E, Q", command=lambda: go_to_preset(Y = "min", X = 0))
+
+set_Z_max_m45 = tk.Button(root, text="set Z, E, Q", command=lambda: set_Z_E_Q(curr_preset))
 set_Z_max_m45.grid(row=r, column=2, columnspan=2)
 r = r+1
-set_Z_min_m45 = tk.Button(root, text="Y0;    X0", command=lambda: go_to_preset(Y = "0", X = 0))
+set_Z_min_m45 = tk.Button(root, text="X0;    Y0", command=lambda: go_to_preset(Y = "0", X = 0))
 set_Z_min_m45.grid(row=r, column=0)
-set_Z_max_m45 = tk.Button(root, text="Y0;    X90", command=lambda: go_to_preset(Y = "0", X = 90))
+set_Z_max_m45 = tk.Button(root, text="X90;    Y0", command=lambda: go_to_preset(Y = "0", X = 90))
 set_Z_max_m45.grid(row=r, column=1)
 r = r+1
-set_Z_min_m45 = tk.Button(root, text="Ymax; X0", command=lambda: go_to_preset(Y = "max", X = 0))
+set_Z_min_m45 = tk.Button(root, text="X0; Ymax", command=lambda: go_to_preset(Y = "max", X = 0))
 set_Z_min_m45.grid(row=r, column=0)
-set_Z_max_m45 = tk.Button(root, text="Ymax; X90", command=lambda: go_to_preset(Y = "max", X = 90))
+set_Z_max_m45 = tk.Button(root, text="X90; Ymax", command=lambda: go_to_preset(Y = "max", X = 90))
 set_Z_max_m45.grid(row=r, column=1)
 
 
