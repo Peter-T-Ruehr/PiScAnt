@@ -3,159 +3,89 @@ import tkinter as tk
 import time
 from picamera2 import Picamera2, Preview
 from picamera2.controls import Controls
-# import io
-# import sys
-# from contextlib import redirect_stdout
 import os
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
-   
+# ~ Serial communication   
 ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=5) # Replace with the correct port name and baud rate
 time.sleep(1)
 ser.reset_input_buffer()
 
+# ~ Picamera intialisation
 picam2 = Picamera2()
 preview_config = picam2.create_preview_configuration()
 capture_config = picam2.create_still_configuration()
 
+
+# ~ microstepping
 microstepping_X = 8 # 110
 microstepping_Y = 8 # 110
 microstepping_Z = 4 # 010
 microstepping_E = 1 # 000
 microstepping_Q = 1 # 000
 
+# ~ steps per revolution
 steps_per_rev_X = 200 * microstepping_X
 steps_per_rev_Y = 200 * microstepping_Y
 steps_per_rev_Z = 200 * microstepping_Z
 steps_per_rev_E = 200 * microstepping_E
 steps_per_rev_Q = 200 * microstepping_Q
 
+# ~ lead in mm
 lead_Z = 4 # mm/rev
 lead_E = 0.7 # mm/rev
 lead_Q = 0.7 # mm/rev
 
+# ~ steps per mm
 steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
 steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
+# ~ initial motor step settings
+X_90 = steps_per_rev_X * 200 * microstepping_X / 4
+X_total = 0
+
+Y_45 = steps_per_rev_Y * 200 * microstepping_Y / 8
+Y_total = 0
+
+Z_total = 0
+E_total = 0
+Q_total = 0
+
+# ~ set initial number of iterations
 iterations_start_X = 8
 iterations_start_Y = 3
 iterations_start_Z = 2
-# iterations_start_E = 2
-# iterations_start_Q = 2
 
-X_homed = "0"
-X_min = 0
-X_max = 0
-X_90 = steps_per_rev_X = 200 * microstepping_X / 4
-X_total = 0
+# ~ make initial number also current number that may be overwritten by user in process
 X_increments = iterations_start_X
-
-Y_homed = "0"
-Y_min = 0
-Y_0 = 0
-Y_max = 0
-Y_total = 0
 Y_increments = iterations_start_Y
-
-Z_max_mm = 125
-Z_max_steps = round(Z_max_mm* steps_per_mm_Z) # 6250
-Z_homed = "0"
-Z_min_m45 = 0
-Z_max_m45 = 0
-Z_min_m0 = 0
-Z_max_m0 = 0
-Z_min_p45 = 0
-Z_max_p45 = 0
-Z_total = 0
 Z_increments = iterations_start_Z
 
-E_homed = "0"
-E_min_m45 = 0
-E_max_m45 = 0
-E_min_m0 = 0
-E_max_m0 = 0
-E_min_p45 = 0
-E_max_p45 = 0
-E_total = 0
-E_increments = X_increments
-
-Q_homed = "0"
-Q_min_m45 = 0
-Q_max_m45 = 0
-Q_min_m0 = 0
-Q_max_m0 = 0
-Q_min_p45 = 0
-Q_max_p45 = 0
-Q_total = 0
-Q_increments = X_increments
-
-curr_preset = "N/A N/A N/A N/A"
-
-def start_camera():
-    print("Starting camera and preview...")
-    picam2.start_preview(Preview.QTGL)
-    picam2.configure(preview_config)
-
-    picam2.start()
-    time.sleep(1)
-
-def set_camera():
-    global exposure
-    global gain
-    exposure = (int(entry_exposure.get())-0) *1000
-    gain = int(entry_gain.get())-0
-    print("setting camera to ", exposure, " ", gain)
-        
-    ctrls = Controls(picam2)
-    ctrls.AnalogueGain = gain
-    ctrls.ExposureTime = exposure
-    picam2.set_controls(ctrls)
-
-    print("waiting for 1 second to apply camera settings...")
-    time.sleep(1)
-
-
-def take_picture(state = "scan", pos = ""):
-    # set_camera()
-    get_project_name()
+# ~ FUNCTIONS
+def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
+    global X_increments
+    X_increments = int(X_it)
+    X_it_text.set(X_it)
+    global Y_increments
+    Y_increments = int(Y_it)
+    Y_it_text.set(Y_it)
+    global Z_increments
+    Z_increments = int(Z_it)
+    Z_it_text.set(Z_it)
     
-    # create specimen directory and define image name
-    if(state == "preview"):
-        os.makedirs(project_name + "/previews/", exist_ok=True) # , exist_ok=True
-        # get current time
-        curr_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        curr_image_name = './' + project_name +'/previews/' + curr_time + '.jpg'
     
-    elif(state == "scan"):
-        os.makedirs(project_name + "/scan/", exist_ok=True) # , exist_ok=True
-        curr_image_name = './' + project_name +'/scan/' + pos + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
-        
-    #save the picture
-    print("********************** taking picture...")
-    # set a trap and redirect stdout
-    # trap = io.StringIO()
-    # with redirect_stdout(trap):
-    picam2.switch_mode_and_capture_file(capture_config, curr_image_name)
+    print("*****************")
+    print("X iterations: " + str(X_increments))
+    print("Y iterations: " + str(Y_increments))
+    print("Z iterations: " + str(Z_increments))
+    print("E (=X) iterations: " + str(X_increments))
+    print("Q (=X) iterations: " + str(X_increments))
+    print("*****************")
     
-    # wait tuill picture is saved
-    print("looking for file " + curr_image_name + "...")
-    while(1):
-        file_present = os.path.isfile(curr_image_name)
-        if(file_present == True):
-            print("file " + curr_image_name + "exists!")
-            delay_after_pic = 0 # exposure/1000000
-            print("delaying for " + str(delay_after_pic) + " seconds...")
-            time.sleep(delay_after_pic)
-            print("exit status: " + "0")
-            print("**********************")
-            return
-
-
 def move_motor(motor, direction, step_type, steps=0):
-
     global X_total
     global Y_total
     global Z_total
@@ -228,7 +158,7 @@ def move_motor(motor, direction, step_type, steps=0):
                 E_total = E_total + steps
             elif(direction == "L"):
                 E_total = E_total - steps
-            print("Current E positon (move_motor): " + str(E_total))
+            # ~ print("Current E positon (move_motor): " + str(E_total))
         else:
             print("Please home motor E first.")
             return()
@@ -247,9 +177,7 @@ def move_motor(motor, direction, step_type, steps=0):
         else:
             print("Please home motor Q first.")
             return()
-    
-    # print("motor " + motor + ": " + input_value)
-    
+        
     # combine value to string to send to Arduino
     send_string = motor + "_" + direction + "_" + input_value + "\n"
     # print("serial command: " + send_string.rstrip())
@@ -261,12 +189,6 @@ def move_motor(motor, direction, step_type, steps=0):
         line = ser.readline().decode('ascii').rstrip()
         # print(line)
         if(line == "0" or line == "1"):
-            # print("exit status: " + line)
-            # print(str(X_total))
-            # pprint(str(Y_total))
-            # pprint(str(Z_total))
-            # pprint(str(E_total))
-            # pprint(str(Q_total))
             return
         time.sleep(0.01)
 
@@ -322,514 +244,65 @@ def create_project():
     # create project directory
     os.makedirs(project_name, exist_ok=True) # , exist_ok=True
 
-def set_motor(motor, direction, pos = "general"):
-    # Get values from input fields
-    if(motor == "X"):
-        global X_total
-        if(direction == "min"):
-            print("Setting " + direction + " for motor " + motor + " to " + str(X_total))
-            global X_min
-            X_min = X_total
-            global X_min_text
-            X_min_text.set(X_min)
-            
-        if(direction == "0"):
-            print("Setting " + direction + " for motor " + motor + " to " + str(0))
-            global X_0
-            X_total = 0
-            X_0 = 0
-            global X_0_text
-            X_min_text.set(X_0)
-            
-        elif(direction == "max"):
-            print("Setting " + direction + " for motor " + motor + " to " + str(X_total))   
-            global X_max
-            X_max = X_total
-            global X_max_text
-            X_max_text.set(X_max)
-            
-    elif(motor == "Y"):
-        global Y_total
-        if(direction == "min"):
-            print("Setting " + direction + " for motor " + motor + " to " + str(Y_total))
-            global Y_min
-            Y_min = Y_total
-            global Y_min_text
-            Y_min_text.set(Y_min)
-            
-        elif(direction == "0"):
-            print("Setting " + direction + " for motor " + motor + " to " + str(0))
-            global Y_0
-            Y_total = 0
-            Y_0 = 0
-            global Y_0_text
-            Y_0_text.set(Y_0)
-            
-        elif(direction == "max"):
-            print("Setting " + direction + " for motor " + motor + " to " + str(Y_total))
-            global Y_max
-            Y_max = Y_total
-            global Y_max_text
-            Y_max_text.set(Y_max)
-            
-        
-            
-    elif(motor == "Z"):
-        if(pos == "m45"):
-            print("Setting " + direction + " for motor " + motor + " at -45° to " + str(Z_total))
-            if(direction == "min"):
-                global Z_min_m45
-                Z_min_m45 = Z_total
-                global Z_min_m45_text
-                Z_min_m45_text.set(Z_min_m45)
-            elif(direction == "max"):
-                global Z_max_m45
-                Z_max_m45 = Z_total
-                global Z_max_m45_text
-                Z_max_m45_text.set(Z_max_m45)
-        elif(pos == "m0"):
-            print("Setting " + direction + " for motor " + motor + " at 0° to " + str(Z_total))
-            if(direction == "min"):
-                global Z_min_m0
-                Z_min_m0 = Z_total
-                global Z_min_m0_text
-                Z_min_m0_text.set(Z_min_m0)
-            elif(direction == "max"):
-                global Z_max_m0
-                Z_max_m0 = Z_total
-                global Z_max_m0_text
-                Z_max_m0_text.set(Z_max_m0)
-        elif(pos == "p45"):
-            print("Setting " + direction + " for motor " + motor + " at +45° to " + str(Z_total))
-            if(direction == "min"):
-                global Z_min_p45
-                Z_min_p45 = Z_total
-                global Z_min_p45_text
-                Z_min_p45_text.set(Z_min_p45)
-            elif(direction == "max"):
-                global Z_max_p45
-                Z_max_p45 = Z_total
-                global Z_max_p45_text
-                Z_max_p45_text.set(Z_max_p45)
-            
-    elif(motor == "E"):
-        if(pos == "m45"):
-            print("Setting " + direction + " for motor " + motor + " at -45° to " + str(E_total))
-            if(direction == "min"):
-                global E_min_m45
-                E_min_m45 = E_total
-                global E_min_m45_text
-                E_min_m45_text.set(E_min_m45)
-            elif(direction == "max"):
-                global E_max_m45
-                E_max_m45 = E_total
-                global E_max_m45_text
-                E_max_m45_text.set(E_max_m45)
-        elif(pos == "m0"):
-            print("Setting " + direction + " for motor " + motor + " at 0° to " + str(E_total))
-            if(direction == "min"):
-                global E_min_m0
-                E_min_m0 = E_total
-                global E_min_m0_text
-                E_min_m0_text.set(E_min_m0)
-            elif(direction == "max"):
-                global E_max_m0
-                E_max_m0 = E_total
-                global E_max_m0_text
-                E_max_m0_text.set(E_max_m0)
-        elif(pos == "p45"):
-            print("Setting " + direction + " for motor " + motor + " at +45° to " + str(E_total))
-            if(direction == "min"):
-                global E_min_p45
-                E_min_p45 = E_total
-                global E_min_p45_text
-                E_min_p45_text.set(E_min_p45)
-            elif(direction == "max"):
-                global E_max_p45
-                E_max_p45 = E_total
-                global E_max_p45_text
-                E_max_p45_text.set(E_max_p45)
-                
-    elif(motor == "Q"):
-        if(pos == "m45"):
-            print("Setting " + direction + " for motor " + motor + " at -45° to " + str(Q_total))
-            if(direction == "min"):
-                global Q_min_m45
-                Q_min_m45 = Q_total
-                global Q_min_m45_text
-                Q_min_m45_text.set(Q_min_m45)
-            elif(direction == "max"):
-                global Q_max_m45
-                Q_max_m45 = Q_total
-                global Q_max_m45_text
-                Q_max_m45_text.set(Q_max_m45)
-        elif(pos == "m0"):
-            print("Setting " + direction + " for motor " + motor + " at 0° to " + str(Q_total))
-            if(direction == "min"):
-                global Q_min_m0
-                Q_min_m0 = Q_total
-                global Q_min_m0_text
-                Q_min_m0_text.set(Q_min_m0)
-            elif(direction == "max"):
-                global Q_max_m0
-                Q_max_m0 = Q_total
-                global Q_max_m0_text
-                Q_max_m0_text.set(Q_max_m0)
-        elif(pos == "p45"):
-            print("Setting " + direction + " for motor " + motor + " at +45° to " + str(Q_total))
-            if(direction == "min"):
-                global Q_min_p45
-                Q_min_p45 = Q_total
-                global Q_min_p45_text
-                Q_min_p45_text.set(Q_min_p45)
-            elif(direction == "max"):
-                global Q_max_p45
-                Q_max_p45 = Q_total
-                global Q_max_p45_text
-                Q_max_p45_text.set(Q_max_p45)
-            
-def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
-    global X_increments
-    X_increments = int(X_it)
-    X_it_text.set(X_it)
-    global Y_increments
-    Y_increments = int(Y_it)
-    Y_it_text.set(Y_it)
-    global Z_increments
-    Z_increments = int(Z_it)
-    Z_it_text.set(Z_it)
-    # ~ global E_increments
-    # ~ E_increments = int(E_it)
-    # ~ E_it_text.set(E_it)
-    # ~ global Q_increments
-    # ~ Q_increments = int(Q_it)
-    # ~ Q_it_text.set(Q_it)
-    
-    
-    print("*****************")
-    print("X iterations: " + str(X_increments))
-    print("Y iterations: " + str(Y_increments))
-    print("Z iterations: " + str(Z_increments))
-    print("E (=X) iterations: " + str(X_increments))
-    print("Q (=X) iterations: " + str(X_increments))
-    print("*****************")
-    
-    
-    
-    
-    
-def go_to_preset(X, Y):
-    
-    # ~ global variables
-    global X_min
-    global Y_90
-    global X_max
-    global Y_min
-    global Y_0
-    global Y_max
-    global X_total
-    global Y_total
-    global Z
-    global E_total
-    global E_min_m45
-    global E_min_m0
-    global E_min_p45
-    global E_max_m45
-    global E_max_m0
-    global E_max_p45
-    global Q_total
-    global Q_min_m45
-    global Q_min_m0
-    global Q_min_p45
-    global Q_max_m45
-    global Q_max_m0
-    global Q_max_p45
-    global curr_preset
-    
-    # ~ define preset
-    if(Y == "min"):
-        if(X == 0):
-            curr_preset = "X 0 Y min"
-        elif(X == 90):
-            curr_preset = "X 90 Y min"
-    elif(Y == "0"):
-        if(X == 0):
-            curr_preset = "X 0 Y 0"
-        elif(X == 90):
-            curr_preset = "X 90 Y 0"
-    elif(Y == "max"):
-        if(X == 0):
-            curr_preset = "X 0 Y max"
-        elif(X == 90):
-            curr_preset = "X 90 Y max"
-    print(curr_preset)
-    
-    # ~ Y
-    if(Y == "min"):
-        curr_y_steps = Y_total - Y_min
-        curr_motor = "Y"
-        
-        if(curr_y_steps < 0):
-            curr_y_steps = abs(curr_y_steps)
-            curr_direction = "R"
-        else:
-            curr_direction = "L"
-        
-        print("Moving " + curr_motor + " by " + str(curr_y_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
-        
-    elif(Y == "0"):
-        curr_y_steps = Y_total - Y_0
-        curr_motor = "Y"
-        
-        if(curr_y_steps < 0):
-            curr_y_steps = abs(curr_y_steps)
-            curr_direction = "R"
-        else:
-            curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_y_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
-        
-    elif(Y == "max"):
-        curr_y_steps = Y_total - Y_max
-        curr_motor = "Y"
-        
-        if(curr_y_steps < 0):
-            curr_y_steps = abs(curr_y_steps)
-            curr_direction = "R"
-        else:
-            curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_y_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
-        
-        
-    # ~ X
-    if(X == 0):
-        curr_x_steps = X_total - X_min
-        curr_motor = "X"
-        
-        if(curr_x_steps < 0):
-            curr_x_steps = abs(curr_x_steps)
-            curr_direction = "R"
-        else:
-            curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_x_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
-        
-    elif(X == 90):
-        curr_x_steps = X_total - X_90
-        curr_motor = "X"
-        
-        if(curr_x_steps < 0):
-            curr_x_steps = abs(curr_x_steps)
-            curr_direction = "R"
-        else:
-            curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_x_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
-    
-    
-    # ~ E
-    print("Current E position: " + str(E_total))
-    if(Y == "min"):
-        if(X == 0):
-            curr_e_steps = E_total - E_min_m45
-            curr_motor = "E"
-            
-            if(curr_e_steps < 0):
-                curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        elif(X == 90):
-            curr_e_steps = E_total - E_max_m45
-            curr_motor = "E"
-            
-            if(curr_e_steps < 0):
-                curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        
-        print("Moving " + curr_motor + " by " + str(curr_e_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
-        
-    elif(Y == "0"):
-        if(X == 0):
-            curr_e_steps = E_total - E_min_m0
-            curr_motor = "E"
-            
-            if(curr_e_steps < 0):
-                curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        elif(X == 90):
-            curr_e_steps = E_total - E_max_m0
-            curr_motor = "E"
-            
-            if(curr_e_steps < 0):
-                curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_e_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
-        
-    elif(Y == "max"):
-        if(X == 0):
-            curr_e_steps = E_total - E_min_p45
-            curr_motor = "E"
-            
-            if(curr_e_steps < 0):
-                curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        elif(X == 90):
-            curr_e_steps = E_total - E_max_p45
-            curr_motor = "E"
-            
-            if(curr_e_steps < 0):
-                curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_e_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
-        
-        
-        
-    # ~ Q
-    print("Current Q position: " + str(Q_total))
-    if(Y == "min"):
-        if(X == 0):
-            curr_q_steps = Q_total - Q_min_m45
-            curr_motor = "Q"
-            
-            if(curr_q_steps < 0):
-                curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        elif(X == 90):
-            curr_q_steps = Q_total - Q_max_m45
-            curr_motor = "Q"
-            
-            if(curr_q_steps < 0):
-                curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        
-        print("Moving " + curr_motor + " by " + str(curr_q_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
-        
-    elif(Y == "0"):
-        if(X == 0):
-            curr_q_steps = Q_total - Q_min_m0
-            curr_motor = "Q"
-            
-            if(curr_q_steps < 0):
-                curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        elif(X == 90):
-            curr_q_steps = Q_total - Q_max_m0
-            curr_motor = "Q"
-            
-            if(curr_q_steps < 0):
-                curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_q_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
-        
-    elif(Y == "max"):
-        if(X == 0):
-            curr_q_steps = Q_total - Q_min_p45
-            curr_motor = "Q"
-            
-            if(curr_q_steps < 0):
-                curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-        elif(X == 90):
-            curr_q_steps = Q_total - Q_max_p45
-            curr_motor = "Q"
-            
-            if(curr_q_steps < 0):
-                curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
-            else:
-                curr_direction = "L"
-            
-        print("Moving " + curr_motor + " by " + str(curr_q_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
-    
-def set_Z_E_Q(curr_preset):
-    # ~ extract info from curr_preset
-    curr_X_pos = curr_preset.split()[1]
-    curr_Y_pos = curr_preset.split()[3]
-    print(curr_X_pos)
-    print(curr_Y_pos)
-    
-    global E_total
-    global E_min_m45
-    global E_min_m0
-    global E_min_p45
-    global E_max_m45
-    global E_max_m0
-    global E_max_p45
-    
-    global Q_total
-    global Q_min_m45
-    global Q_min_m0
-    global Q_min_p45
-    global Q_max_m45
-    global Q_max_m0
-    global Q_max_p45
-    
-    # ~ E&Q
-    if(curr_X_pos == str(0)):
-        # ~ E
-        print("Setting E for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(E_total))
-        E_min_m45 = E_total
-        E_min_m0 = E_total
-        E_min_p45 = E_total
-        
-        # ~ Q
-        print("Setting Q for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(Q_total))
-        Q_min_m45 = Q_total
-        Q_min_m0 = Q_total
-        Q_min_p45 = Q_total
-        
-    if(curr_X_pos == str(90)):
-        # ~ E
-        print("Setting E for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(E_total))
-        E_max_m45 = E_total
-        E_max_m0 = E_total
-        E_max_p45 = E_total
-        
-        # ~ Q
-        print("Setting Q for X" + curr_X_pos + " Y" + curr_Y_pos + " to " + str(Q_total))
-        Q_max_m45 = Q_total
-        Q_max_m0 = Q_total
-        Q_max_p45 = Q_total
-        
-    
-    
+def start_camera():
+    print("Starting camera and preview...")
+    picam2.start_preview(Preview.QTGL)
+    picam2.configure(preview_config)
 
+    picam2.start()
+    time.sleep(1)
+
+def set_camera():
+    global exposure
+    global gain
+    exposure = (int(entry_exposure.get())-0) *1000
+    gain = int(entry_gain.get())-0
+    print("setting camera to ", exposure, " ", gain)
+        
+    ctrls = Controls(picam2)
+    ctrls.AnalogueGain = gain
+    ctrls.ExposureTime = exposure
+    picam2.set_controls(ctrls)
+
+    print("waiting for 1 second to apply camera settings...")
+    time.sleep(1)
+
+
+def take_picture(state = "scan", pos = ""):
+    # set_camera()
+    get_project_name()
+    
+    # create specimen directory and define image name
+    if(state == "preview"):
+        os.makedirs(project_name + "/previews/", exist_ok=True) # , exist_ok=True
+        # get current time
+        curr_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        curr_image_name = './' + project_name +'/previews/' + curr_time + '.jpg'
+    
+    elif(state == "scan"):
+        os.makedirs(project_name + "/scan/", exist_ok=True) # , exist_ok=True
+        curr_image_name = './' + project_name +'/scan/' + pos + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
+        
+    #save the picture
+    print("********************** taking picture...")
+    # set a trap and redirect stdout
+    # trap = io.StringIO()
+    # with redirect_stdout(trap):
+    picam2.switch_mode_and_capture_file(capture_config, curr_image_name)
+    
+    # wait tuill picture is saved
+    print("looking for file " + curr_image_name + "...")
+    while(1):
+        file_present = os.path.isfile(curr_image_name)
+        if(file_present == True):
+            print("file " + curr_image_name + "exists!")
+            delay_after_pic = 0 # exposure/1000000
+            print("delaying for " + str(delay_after_pic) + " seconds...")
+            time.sleep(delay_after_pic)
+            print("exit status: " + "0")
+            print("**********************")
+            return
+            
 def start_scan():
     print("****************")
     print("Scan process initalized.")
@@ -1010,94 +483,444 @@ def start_scan():
             time.sleep((int(entry_delay_pics.get())+2))
                     
     print('Scan done!')
-
-# start_camera()
-
+    
+    
+def set_motor(motor, X = "NA", Y = "NA"):
+    # ~ get absolute positions of motors
+    global X_total
+    global Y_total
+    global Z_total
+    global E_total
+    global Q_total
+        
+    # Get values from input fields
+    if(motor == "X"):
+        print("Setting motor " + motor + " to " + str(0))
+        X_total = 0
+      
+    elif(motor == "Y"):
+        print("Setting motor " + motor + " to " + str(0))
+        Y_total = 0
+        
+    elif(motor == "E"):
+        global E_total
+        print("Setting motor " + motor + " at X = " + X + " and Y = " + Y + " to " + str(0))
+        if(X == 0):
+            if(Y == -45):
+                E_0_m45 = E_total
+            if(Y == 0):
+                E_0_m0 = E_total
+            if(Y == +45):
+                E_0_p45 = E_total
+        
+        
+        
+def go_to_preset(X, Y):
+    
+    # ~ global variables xxx: here!: Rename variables from min to 0 etc...
+    global X_0
+    global X_90
+    global X_total
+    
+    global Y_0
+    global Y_45
+    # ~ global Y_0
+    # ~ global Y_p45
+    global Y_total
+    
+    global Z
+    global Z_total
+    global Z_min_m45
+    global Z_min_m0
+    global Z_min_p45
+    global Z_max_m45
+    global Z_max_m0
+    global Z_max_p45
+    
+    global E_total
+    global E_min_m45
+    global E_min_m0
+    global E_min_p45
+    global E_max_m45
+    global E_max_m0
+    global E_max_p45
+    
+    global Q_total
+    global Q_min_m45
+    global Q_min_m0
+    global Q_min_p45
+    global Q_max_m45
+    global Q_max_m0
+    global Q_max_p45
+    global curr_preset
+    
+    # ~ redefine current position as <>_total xxx: here!: give every setting a flag. If flag == 0, then take current total value. Else, take set value
+    if(np.isnan(Z_total)):
+        Z_total = 0
+    if(np.isnan(E_total)):
+        E_total = 0
+    if(np.isnan(Q_total)):
+        Q_total = 0
+    
+    # ~ define preset
+    if(Y == -45):
+        if(X == 0):
+            curr_preset = "X 0 Y -45"
+        elif(X == 90):
+            curr_preset = "X 90 Y -45"
+    elif(Y == 0):
+        if(X == 0):
+            curr_preset = "X 0 Y 0"
+        elif(X == 90):
+            curr_preset = "X 90 Y 0"
+    elif(Y == +45):
+        if(X == 0):
+            curr_preset = "X 0 Y 45"
+        elif(X == 90):
+            curr_preset = "X 90 Y 45"
+    print(curr_preset)
+    
+        
+    # ~ X
+    if(X == 0):
+        curr_x_steps = X_total - X_min
+        curr_motor = "X"
+        
+        if(curr_x_steps < 0):
+            curr_x_steps = abs(curr_x_steps)
+            curr_direction = "R"
+        else:
+            curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_x_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
+        
+    elif(X == 90):
+        curr_x_steps = X_total - X_90
+        curr_motor = "X"
+        
+        if(curr_x_steps < 0):
+            curr_x_steps = abs(curr_x_steps)
+            curr_direction = "R"
+        else:
+            curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_x_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
+        
+        
+        
+    # ~ Y
+    if(Y == -45):
+        curr_y_steps = Y_total - Y_min
+        curr_motor = "Y"
+        
+        if(curr_y_steps < 0):
+            curr_y_steps = abs(curr_y_steps)
+            curr_direction = "R"
+        else:
+            curr_direction = "L"
+        
+        print("Moving " + curr_motor + " by " + str(curr_y_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
+        
+    elif(Y == 0):
+        curr_y_steps = Y_total - Y_0
+        curr_motor = "Y"
+        
+        if(curr_y_steps < 0):
+            curr_y_steps = abs(curr_y_steps)
+            curr_direction = "R"
+        else:
+            curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_y_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
+        
+    elif(Y == +45):
+        curr_y_steps = Y_total - Y_max
+        curr_motor = "Y"
+        
+        if(curr_y_steps < 0):
+            curr_y_steps = abs(curr_y_steps)
+            curr_direction = "R"
+        else:
+            curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_y_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
+    
+    
+    
+    # ~ Z
+    print("Current Z position: " + str(Z_total))
+    if(Y == -45):
+        if(X == 0):
+            curr_z_steps = Z_total - Z_min_m45
+            curr_motor = "Z"
+            
+            if(curr_z_steps < 0):
+                curr_z_steps = abs(curr_z_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_z_steps = Z_total - Z_max_m45
+            curr_motor = "Z"
+            
+            if(curr_z_steps < 0):
+                curr_z_steps = abs(curr_z_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        
+        print("Moving " + curr_motor + " by " + str(curr_z_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_z_steps) 
+        
+    elif(Y == 0):
+        if(X == 0):
+            curr_z_steps = Z_total - Z_min_m0
+            curr_motor = "Z"
+            
+            if(curr_z_steps < 0):
+                curr_z_steps = abs(curr_z_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_z_steps = Z_total - Z_max_m0
+            curr_motor = "Z"
+            
+            if(curr_z_steps < 0):
+                curr_z_steps = abs(curr_z_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_z_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_z_steps) 
+        
+    elif(Y == +45):
+        if(X == 0):
+            curr_z_steps = Z_total - Z_min_p45
+            curr_motor = "Z"
+            
+            if(curr_z_steps < 0):
+                curr_z_steps = abs(curr_z_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_z_steps = Z_total - Z_max_p45
+            curr_motor = "Z"
+            
+            if(curr_z_steps < 0):
+                curr_z_steps = abs(curr_z_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_z_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_z_steps) 
+    
+    
+    
+    # ~ E
+    print("Current E position: " + str(E_total))
+    if(Y == -45):
+        if(X == 0):
+            curr_e_steps = E_total - E_min_m45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_e_steps = E_total - E_max_m45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        
+        print("Moving " + curr_motor + " by " + str(curr_e_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
+        
+    elif(Y == 0):
+        if(X == 0):
+            curr_e_steps = E_total - E_min_m0
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_e_steps = E_total - E_max_m0
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_e_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
+        
+    elif(Y == +45):
+        if(X == 0):
+            curr_e_steps = E_total - E_min_p45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_e_steps = E_total - E_max_p45
+            curr_motor = "E"
+            
+            if(curr_e_steps < 0):
+                curr_e_steps = abs(curr_e_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_e_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
+        
+        
+        
+    # ~ Q
+    print("Current Q position: " + str(Q_total))
+    if(Y == -45):
+        if(X == 0):
+            curr_q_steps = Q_total - Q_min_m45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_q_steps = Q_total - Q_max_m45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        
+        print("Moving " + curr_motor + " by " + str(curr_q_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
+        
+    elif(Y == 0):
+        if(X == 0):
+            curr_q_steps = Q_total - Q_min_m0
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_q_steps = Q_total - Q_max_m0
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_q_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
+        
+    elif(Y == +45):
+        if(X == 0):
+            curr_q_steps = Q_total - Q_min_p45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+        elif(X == 90):
+            curr_q_steps = Q_total - Q_max_p45
+            curr_motor = "Q"
+            
+            if(curr_q_steps < 0):
+                curr_q_steps = abs(curr_q_steps)
+                curr_direction = "R"
+            else:
+                curr_direction = "L"
+            
+        print("Moving " + curr_motor + " by " + str(curr_q_steps))
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
+            
+            
+    
+    
 # Create GUI
 root = tk.Tk()
 root.title("Motor Control")
 
+# initializing stage values for E wut NA
+E_0_m45 = np.nan
+E_0_m0 = np.nan
+E_0_p45 = np.nan
+E_90_m45 = np.nan
+E_90_m0 = np.nan
+E_90_p45 = np.nan
+E_total = np.nan
 
-X_min_text = tk.IntVar()
-X_min_text.set(X_min)
-X_max_text = tk.IntVar()
-X_max_text.set(X_max)
+# tkinter text variables
+# ~ E0
+E_0_m45_text = tk.IntVar()
+E_0_m45_text.set(E_0_m45)
+E_0_m0_text = tk.IntVar()
+E_0_m0_text.set(E_0_m0)
+E_0_p45_text = tk.IntVar()
+E_0_p45_text.set(E_0_p45)
 
-Y_min_text = tk.IntVar()
-Y_min_text.set(Y_min)
-Y_0_text = tk.IntVar()
-Y_0_text.set(Y_0)
-Y_max_text = tk.IntVar()
-Y_max_text.set(Y_max)
+# ~ E90
+E_90_m45_text = tk.IntVar()
+E_90_m45_text.set(E_90_m45)
+E_90_m0_text = tk.IntVar()
+E_90_m0_text.set(E_90_m0)
+E_90_p45_text = tk.IntVar()
+E_90_p45_text.set(E_90_p45)
 
-Z_min_m45_text = tk.IntVar()
-Z_min_m45_text.set(Z_min_m45)
-Z_max_m45_text = tk.IntVar()
-Z_max_m45_text.set(Z_max_m45)
-
-Z_min_m0_text = tk.IntVar()
-Z_min_m0_text.set(Z_min_m0)
-Z_max_m0_text = tk.IntVar()
-Z_max_m0_text.set(Z_max_m0)
-
-Z_min_p45_text = tk.IntVar()
-Z_min_p45_text.set(Z_min_p45)
-Z_max_p45_text = tk.IntVar()
-Z_max_p45_text.set(Z_max_p45)
-
-E_min_m45_text = tk.IntVar()
-E_min_m45_text.set(E_min_m45)
-E_max_m45_text = tk.IntVar()
-E_max_m45_text.set(E_max_m45)
-
-E_min_m0_text = tk.IntVar()
-E_min_m0_text.set(E_min_m0)
-E_max_m0_text = tk.IntVar()
-E_max_m0_text.set(E_max_m0)
-
-E_min_p45_text = tk.IntVar()
-E_min_p45_text.set(E_min_p45)
-E_max_p45_text = tk.IntVar()
-E_max_p45_text.set(E_max_p45)
-
-Q_min_m45_text = tk.IntVar()
-Q_min_m45_text.set(Q_min_m45)
-Q_max_m45_text = tk.IntVar()
-Q_max_m45_text.set(Q_max_m45)
-
-Q_min_m0_text = tk.IntVar()
-Q_min_m0_text.set(Q_min_m0)
-Q_max_m0_text = tk.IntVar()
-Q_max_m0_text.set(Q_max_m0)
-
-Q_min_p45_text = tk.IntVar()
-Q_min_p45_text.set(Q_min_p45)
-Q_max_p45_text = tk.IntVar()
-Q_max_p45_text.set(Q_max_p45)
-
+# ~ define text variables
 X_it_text = tk.IntVar()
 X_it_text.set(X_increments)
 Y_it_text = tk.IntVar()
 Y_it_text.set(Y_increments)
 Z_it_text = tk.IntVar()
 Z_it_text.set(Z_increments)
-E_it_text = tk.IntVar()
-E_it_text.set(E_increments)
-Q_it_text = tk.IntVar()
-Q_it_text.set(Q_increments)
 
-# get screen width and height
+# ~ get screen width and height
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 
-# calculate position x and y coordinates
-width = 700
-height = 1000
+# ~ calculate position x and y coordinates
+width = 1000
+height = 620
 x = (screen_width) - (width)
-# ~ x = 0
 y = (screen_height) - height - 50
-# ~ y = 0 # height - screen_height + 100
 root.geometry('%dx%d+%d+%d' % (width, height, x, y))
+
 
 # Create Project
 r = 0
@@ -1149,12 +972,13 @@ new_text = "0"
 entry_gain.insert(0, new_text)
 entry_gain.grid(row=r, column=3)
 
+r = r+1
 spacer_Q = tk.Label(root, text='photo delay (s)')
-spacer_Q.grid(row=r, column=4)
+spacer_Q.grid(row=r, column=0)
 entry_delay_pics = tk.Entry(root, width=7)
 new_text = "1"
 entry_delay_pics.insert(0, new_text)
-entry_delay_pics.grid(row=r, column=5)
+entry_delay_pics.grid(row=r, column=1)
 
 # Motor energy
 r = r+1
@@ -1245,121 +1069,108 @@ spacer_Q.grid(row=r, column=3)
 
 
 # Iterations
-r = r_motor_controls
+r = r+1
 spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=4)
+spacer_Q.grid(row=r, column=0)
 r = r+1
 spacer_Q = tk.Label(root, text="Iterations")
-spacer_Q.grid(row=r, column=4)
+spacer_Q.grid(row=r, column=0)
 
 # Iterations Set
 set_iterations_button = tk.Button(root, text="Set", command=lambda: set_iterations(X_it=entry_X_it.get(), Y_it=entry_Y_it.get(), Z_it=entry_Z_it.get(), E_it=entry_X_it.get(), Q_it=entry_X_it.get()))
-set_iterations_button.grid(row=r, column=5)
+set_iterations_button.grid(row=r, column=1)
 
 # Iterations Settings
 r = r+1
+spacer_Q = tk.Label(root, text="X")
+spacer_Q.grid(row=r, column=0)
 entry_X_it = tk.Entry(root, width=5)
 new_text = str(iterations_start_X)
 entry_X_it.insert(0, new_text)
-entry_X_it.grid(row=r, column=4)
+entry_X_it.grid(row=r, column=1)
 X_it_label = tk.Label(root, textvariable=X_it_text)
-X_it_label.grid(row=r, column=5)
-
+X_it_label.grid(row=r, column=2)
 
 r = r+1
+spacer_Q = tk.Label(root, text="Y")
+spacer_Q.grid(row=r, column=0)
 entry_Y_it = tk.Entry(root, width=5)
 new_text = str(iterations_start_Y)
 entry_Y_it.insert(0, new_text)
-entry_Y_it.grid(row=r, column=4)
+entry_Y_it.grid(row=r, column=1)
 Y_it_label = tk.Label(root, textvariable=Y_it_text)
-Y_it_label.grid(row=r, column=5)
+Y_it_label.grid(row=r, column=2)
 
 r = r+1
+spacer_Q = tk.Label(root, text="Z")
+spacer_Q.grid(row=r, column=0)
 entry_Z_it = tk.Entry(root, width=5)
 new_text = str(iterations_start_Z)
 entry_Z_it.insert(0, new_text)
-entry_Z_it.grid(row=r, column=4)
+entry_Z_it.grid(row=r, column=1)
 Z_it_label = tk.Label(root, textvariable=Z_it_text)
-Z_it_label.grid(row=r, column=5)
+Z_it_label.grid(row=r, column=2)
 
 r = r+1
-# ~ entry_E_it = tk.Entry(root, width=5)
-# ~ new_text = str(iterations_start)
-# ~ entry_E_it.insert(0, new_text)
-# ~ entry_E_it.grid(row=r, column=4)
+spacer_Q = tk.Label(root, text="E")
+spacer_Q.grid(row=r, column=0)
 E_it_label = tk.Label(root, textvariable=X_it_text)
-E_it_label.grid(row=r, column=5)
+E_it_label.grid(row=r, column=2)
 
 r = r+1
-# ~ entry_Q_it = tk.Entry(root, width=5)
-# ~ new_text = str(iterations_start)
-# ~ entry_Q_it.insert(0, new_text)
-# ~ entry_Q_it.grid(row=r, column=4)
+spacer_Q = tk.Label(root, text="Q")
+spacer_Q.grid(row=r, column=0)
 Q_it_label = tk.Label(root, textvariable=X_it_text)
-Q_it_label.grid(row=r, column=5)
+Q_it_label.grid(row=r, column=2)
 
 
-
-r = r+1 
-# r_range_sets = r
+# ~ go through stages
+r = r_motor_controls
 spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=0)
-r = r+1
-spacer_Q = tk.Label(root, text="Set X and Y range")
-spacer_Q.grid(row=r, column=0, columnspan=4)
-r = r+1
-set_X_min = tk.Button(root, text="Set X0", command=lambda: set_motor(motor = "X", direction = "0"))
-set_X_min.grid(row=r, column=0)
-X_min_label = tk.Label(root, textvariable=X_min_text)
-X_min_label.grid(row=r, column=1)
-X_max_label = tk.Label(root, textvariable=X_max_text)
-X_max_label.grid(row=r, column=2)
-set_X_max = tk.Button(root, text="Set X max", command=lambda: set_motor(motor = "X", direction = "max"))
-set_X_max.grid(row=r, column=3)
-r = r+1
-set_Y_min = tk.Button(root, text="Set Y min", command=lambda: set_motor(motor = "Y", direction = "min"))
-set_Y_min.grid(row=r, column=0)
-Y_min_label = tk.Label(root, textvariable=Y_min_text)
-Y_min_label.grid(row=r, column=1)
-Y_max_label = tk.Label(root, textvariable=Y_max_text)
-Y_max_label.grid(row=r, column=2)
-set_Y_max = tk.Button(root, text="Set Y max", command=lambda: set_motor(motor = "Y", direction = "max"))
-set_Y_max.grid(row=r, column=3)
-r = r+1
-set_Y_0 = tk.Button(root, text="Set Y 0", command=lambda: set_motor(motor = "Y", direction = "0"))
-set_Y_0.grid(row=r, column=1)
-Y_0_label = tk.Label(root, textvariable=Y_0_text)
-Y_0_label.grid(row=r, column=2)
+spacer_Q.grid(row=r, column=5)
 
-
-
-# Motor ranges
 r = r+1
-r_motor_ranges = r
+spacer_Q = tk.Label(root, text="Move X and Y and set to 0")
+spacer_Q.grid(row=r, column=5, columnspan=4)
+
+r = r+1
+set_X_min = tk.Button(root, text="Set X0", command=lambda: set_motor(motor = "X"))
+set_X_min.grid(row=r, column=5)
+
+r = r+1
+set_X_min = tk.Button(root, text="Set Y0", command=lambda: set_motor(motor = "Y"))
+set_X_min.grid(row=r, column=5)
+
+r = r+1
 spacer_Q = tk.Label(root, text="   ")
-spacer_Q.grid(row=r, column=0)
-r = r+1
-spacer_Q = tk.Label(root, text="Go to position")
-spacer_Q.grid(row=r, column=0, columnspan=4)
+spacer_Q.grid(row=r, column=5)
 
 r = r+1
-set_Z_min_m45 = tk.Button(root, text="X0; Ymin", command=lambda: go_to_preset(Y = "min", X = 0))
-set_Z_min_m45.grid(row=r, column=0)
-set_Z_max_m45 = tk.Button(root, text="X90; Ymin", command=lambda: go_to_preset(Y = "min", X = 90))
-set_Z_max_m45.grid(row=r, column=1)
+spacer_Q = tk.Label(root, text="Choose preset for X and Y and set Z1,Z2, E, Q")
+spacer_Q.grid(row=r, column=5, columnspan=4)
 
-set_Z_max_m45 = tk.Button(root, text="set Z, E, Q", command=lambda: set_Z_E_Q(curr_preset))
-set_Z_max_m45.grid(row=r, column=2, columnspan=2)
 r = r+1
-set_Z_min_m45 = tk.Button(root, text="X0;    Y0", command=lambda: go_to_preset(Y = "0", X = 0))
-set_Z_min_m45.grid(row=r, column=0)
-set_Z_max_m45 = tk.Button(root, text="X90;    Y0", command=lambda: go_to_preset(Y = "0", X = 90))
-set_Z_max_m45.grid(row=r, column=1)
-r = r+1
-set_Z_min_m45 = tk.Button(root, text="X0; Ymax", command=lambda: go_to_preset(Y = "max", X = 0))
-set_Z_min_m45.grid(row=r, column=0)
-set_Z_max_m45 = tk.Button(root, text="X90; Ymax", command=lambda: go_to_preset(Y = "max", X = 90))
-set_Z_max_m45.grid(row=r, column=1)
+set_Z_min_m45 = tk.Button(root, text="X0; Y-45", width = 7, command=lambda: go_to_preset(X = 0, Y = -45))
+set_Z_min_m45.grid(row=r, column=5)
 
+r = r+1
+set_Z_min_m45 = tk.Button(root, text="X0; Y0", width = 7, command=lambda: go_to_preset(X = 0, Y = 0))
+set_Z_min_m45.grid(row=r, column=5)
+
+r = r+1
+set_Z_min_m45 = tk.Button(root, text="X0; Y+45", width = 7, command=lambda: go_to_preset(X = 0, Y = +45))
+set_Z_min_m45.grid(row=r, column=5)
+
+r = r+1
+set_Z_min_m45 = tk.Button(root, text="X90; Y-45", width = 7, command=lambda: go_to_preset(X = 90, Y = -45))
+set_Z_min_m45.grid(row=r, column=5)
+
+r = r+1
+set_Z_min_m45 = tk.Button(root, text="X90; Y0", width = 7, command=lambda: go_to_preset(X = 90, Y = 0))
+set_Z_min_m45.grid(row=r, column=5)
+
+r = r+1
+set_Z_min_m45 = tk.Button(root, text="X90; Y+45", width = 7, command=lambda: go_to_preset(X = 90, Y = +45))
+set_Z_min_m45.grid(row=r, column=5)
 
 root.mainloop()
