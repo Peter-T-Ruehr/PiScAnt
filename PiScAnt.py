@@ -44,15 +44,39 @@ steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
 # ~ initial motor step settings
-X_90 = steps_per_rev_X * 200 * microstepping_X / 4
 X_total = 0
+X_0 = 0
+X_90 = 0
 
-Y_45 = steps_per_rev_Y * 200 * microstepping_Y / 8
 Y_total = 0
+Y_m45 = 0
+Y_0 = 0
+Y_p45 = 0
+
 
 Z_total = 0
+Z_min_m45 = 0
+Z_max_m45 = 0
+Z_min_m0 = 0
+Z_max_m0 = 0
+Z_min_p45 = 0
+Z_max_p45 = 0
+
 E_total = 0
+E_min_m45 = 0
+E_max_m45 = 0
+E_min_m0 = 0
+E_max_m0 = 0
+E_min_p45 = 0
+E_max_p45 = 0
+
 Q_total = 0
+Q_min_m45 = 0
+Q_max_m45 = 0
+Q_min_m0 = 0
+Q_max_m0 = 0
+Q_min_p45 = 0
+Q_max_p45 = 0
 
 # ~ set initial number of iterations
 iterations_start_X = 8
@@ -103,10 +127,15 @@ def move_motor(motor, direction, step_type, steps=0):
         if(X_homed == "1"):
             entry = entry_X.get()
             if(step_type == "unit"):
+                # ~ print("in motor def unit:")
                 steps = round((int(entry)-0) * (steps_per_rev_X/360))
+                # ~ print(steps)
             elif(step_type == "steps"):
+                # ~ print("in motor def steps:")
                 steps = steps
+                # ~ print(steps)
             input_value = str(steps)
+            # ~ print(input_value)
             if(direction == "R"):
                 X_total = X_total + steps
             elif(direction == "L"):
@@ -321,7 +350,7 @@ def start_scan():
     print(str(X_steps_per_increment) + " per " + str(X_increments) + " increments")
     
     # Y
-    Y_steps_scan = Y_max-Y_min
+    Y_steps_scan = Y_p45-Y_m45
     Y_steps_per_increment = round(Y_steps_scan/(Y_increments-1))
     print(str(Y_steps_per_increment) + " per " + str(Y_increments) + " increments")
     
@@ -329,7 +358,7 @@ def start_scan():
     plt.figure(figsize = (12,6))
     
     # Z
-    Z_steps_scan = Z_max_m45-Z_min_m45
+    Z_steps_scan = Z_p45-Z_m45
     Z_steps_per_increment = round(Z_steps_scan/(Z_increments-1))
     print(str(Z_steps_per_increment) + " per " + str(Z_increments) + " increments")
 
@@ -392,8 +421,8 @@ def start_scan():
     
     # move all motors to start
     print("Moving all motors to start position.")
-    move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_min))
-    move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_min))
+    move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_0))
+    move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_0))
     move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min_m45))
     move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min_m45))
     move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min_m45))
@@ -488,7 +517,12 @@ def start_scan():
 def set_motor(motor, X = "NA", Y = "NA"):
     # ~ get absolute positions of motors
     global X_total
+    global X_0
+    global X_90
     global Y_total
+    global Y_m45
+    global Y_0
+    global Y_p45
     global Z_total
     global E_total
     global Q_total
@@ -496,11 +530,16 @@ def set_motor(motor, X = "NA", Y = "NA"):
     # Get values from input fields
     if(motor == "X"):
         print("Setting motor " + motor + " to " + str(0))
+        X_0 = 0
         X_total = 0
+        X_90 = X_total + steps_per_rev_X / 4
       
     elif(motor == "Y"):
         print("Setting motor " + motor + " to " + str(0))
         Y_total = 0
+        Y_0 = 0
+        Y_m45 = Y_total + steps_per_rev_Y / 8
+        Y_p45 = Y_total - steps_per_rev_Y / 8
         
     elif(motor == "E"):
         global E_total
@@ -522,10 +561,9 @@ def go_to_preset(X, Y):
     global X_90
     global X_total
     
+    global Y_m45
     global Y_0
-    global Y_45
-    # ~ global Y_0
-    # ~ global Y_p45
+    global Y_p45
     global Y_total
     
     global Z
@@ -555,12 +593,12 @@ def go_to_preset(X, Y):
     global curr_preset
     
     # ~ redefine current position as <>_total xxx: here!: give every setting a flag. If flag == 0, then take current total value. Else, take set value
-    if(np.isnan(Z_total)):
-        Z_total = 0
-    if(np.isnan(E_total)):
-        E_total = 0
-    if(np.isnan(Q_total)):
-        Q_total = 0
+    # ~ if(np.isnan(Z_total)):
+        # ~ Z_total = 0
+    # ~ if(np.isnan(E_total)):
+        # ~ E_total = 0
+    # ~ if(np.isnan(Q_total)):
+        # ~ Q_total = 0
     
     # ~ define preset
     if(Y == -45):
@@ -583,7 +621,7 @@ def go_to_preset(X, Y):
         
     # ~ X
     if(X == 0):
-        curr_x_steps = X_total - X_min
+        curr_x_steps = X_total - X_0
         curr_motor = "X"
         
         if(curr_x_steps < 0):
@@ -593,9 +631,9 @@ def go_to_preset(X, Y):
             curr_direction = "L"
             
         print("Moving " + curr_motor + " by " + str(curr_x_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = round(curr_x_steps)) 
         
-    elif(X == 90):
+    elif(X == 90): 
         curr_x_steps = X_total - X_90
         curr_motor = "X"
         
@@ -606,13 +644,13 @@ def go_to_preset(X, Y):
             curr_direction = "L"
             
         print("Moving " + curr_motor + " by " + str(curr_x_steps))
-        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_x_steps) 
+        move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = round(curr_x_steps)) 
         
         
         
     # ~ Y
     if(Y == -45):
-        curr_y_steps = Y_total - Y_min
+        curr_y_steps = Y_total - Y_m45
         curr_motor = "Y"
         
         if(curr_y_steps < 0):
@@ -638,7 +676,7 @@ def go_to_preset(X, Y):
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
         
     elif(Y == +45):
-        curr_y_steps = Y_total - Y_max
+        curr_y_steps = Y_total - Y_p45
         curr_motor = "Y"
         
         if(curr_y_steps < 0):
