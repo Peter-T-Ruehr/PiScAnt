@@ -1,6 +1,7 @@
-import serial
 import tkinter as tk
 import time
+from time import sleep
+import RPi.GPIO as GPIO
 from picamera2 import Picamera2, Preview
 from picamera2.controls import Controls
 import os
@@ -8,40 +9,21 @@ import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ~ Serial communication   
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=5) # Replace with the correct port name and baud rate
-time.sleep(1)
-ser.reset_input_buffer()
-
 # ~ Picamera intialisation
 picam2 = Picamera2()
 preview_config = picam2.create_preview_configuration()
 capture_config = picam2.create_still_configuration()
 
 
-# ~ microstepping
-microstepping_X = 8 # 110
-microstepping_Y = 8 # 110
-microstepping_Z = 4 # 010
-microstepping_E = 1 # 000
-microstepping_Q = 1 # 000
-
-# ~ steps per revolution
-steps_per_rev_X = 200 * microstepping_X
-steps_per_rev_Y = 200 * microstepping_Y
-steps_per_rev_Z = 200 * microstepping_Z
-steps_per_rev_E = 200 * microstepping_E
-steps_per_rev_Q = 200 * microstepping_Q
-
 # ~ lead in mm
-lead_Z = 4 # mm/rev
-lead_E = 0.7 # mm/rev
-lead_Q = 0.7 # mm/rev
+# ~ lead_Z = 4 # mm/rev
+# ~ lead_E = 0.7 # mm/rev
+# ~ lead_Q = 0.7 # mm/rev
 
 # ~ steps per mm
-steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
-steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
-steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
+# ~ steps_per_mm_Z = round(1/lead_Z * steps_per_rev_Z)
+# ~ steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
+# ~ steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
 # ~ initial motor step settings
 X_total = 0
@@ -62,21 +44,40 @@ Z_max_m0 = 0
 Z_min_p45 = 0
 Z_max_p45 = 0
 
-E_total = 0
-E_min_m45 = 0
-E_max_m45 = 0
-E_min_m0 = 0
-E_max_m0 = 0
-E_min_p45 = 0
-E_max_p45 = 0
+# ~ pin definitions
+CW = 1     # Clockwise Rotation
+CCW = 0    # Counterclockwise Rotation
+SPR = 200  # steps per revolution (200 ~ 1.8°)
 
-Q_total = 0
-Q_min_m45 = 0
-Q_max_m45 = 0
-Q_min_m0 = 0
-Q_max_m0 = 0
-Q_min_p45 = 0
-Q_max_p45 = 0
+DIR_X = 6   # Direction GPIO Pin
+STEP_X = 13  # Step GPIO Pin
+microstep_X = 1/32    # microstepping
+SPR_X = SPR/microstep_X    # steps per revolution incl. microstepping
+
+DIR_Y = 19   # Direction GPIO Pin
+STEP_Y = 26  # Step GPIO Pin
+microstep_Y = 1/32    # microstepping
+SPR_Y = SPR/microstep_Y    # steps per revolution incl. microstepping
+
+DIR_Z = 20   # Direction GPIO Pin
+STEP_Z = 21  # Step GPIO Pin
+microstep_Z = 1/2    # microstepping
+SPR_Z = SPR/microstep_Z    # steps per revolution incl. microstepping
+
+
+# GPIO setup
+GPIO.setmode(GPIO.BCM)
+
+GPIO.setup(DIR_X, GPIO.OUT)
+GPIO.setup(STEP_X, GPIO.OUT)
+GPIO.setup(DIR_Y, GPIO.OUT)
+GPIO.setup(STEP_Y, GPIO.OUT)
+GPIO.setup(DIR_Z, GPIO.OUT)
+GPIO.setup(STEP_Z, GPIO.OUT)
+
+delay_X = .000025
+delay_Y = .0002
+delay_Z = .00025
 
 # ~ set initial number of iterations
 iterations_start_X = 8
@@ -108,8 +109,13 @@ def set_iterations(X_it=2, Y_it=2, Z_it=2, E_it=2, Q_it=2):
     print("E (=X) iterations: " + str(X_increments))
     print("Q (=X) iterations: " + str(X_increments))
     print("*****************")
+   
+
+def move_motor(motor, 
+                    direction):
     
-def move_motor(motor, direction, step_type, steps=0):
+    print(motor)
+    
     global X_total
     global Y_total
     global Z_total
@@ -122,108 +128,73 @@ def move_motor(motor, direction, step_type, steps=0):
     E_homed = "1"
     Q_homed = "1"
     
-    # Get values from input fields
     if(motor == "X"):
         if(X_homed == "1"):
             entry = entry_X.get()
-            if(step_type == "unit"):
-                # ~ print("in motor def unit:")
-                steps = round((int(entry)-0) * (steps_per_rev_X/360))
-                # ~ print(steps)
-            elif(step_type == "steps"):
-                # ~ print("in motor def steps:")
-                steps = steps
-                # ~ print(steps)
-            input_value = str(steps)
-            # ~ print(input_value)
-            if(direction == "R"):
+            print(entry)
+            steps = round(int(entry)/360 * SPR_X)
+            print(steps)
+            if(direction == CW):
                 X_total = X_total + steps
-            elif(direction == "L"):
+            elif(direction == CCW):
                 X_total = X_total - steps
+            print(X_total)
+                    
+            curr_dir_pin = DIR_X
+            curr_step_pin = STEP_X
+            curr_delay = delay_X
         else:
             print("Please home motor X first.")
             return()
-        
-    elif (motor == "Y"):
+
+    if(motor == "Y"):
         if(Y_homed == "1"):
             entry = entry_Y.get()
-            if(step_type == "unit"):
-                steps = round((int(entry)-0) * (steps_per_rev_Y/360))
-            elif(step_type == "steps"):
-                steps = steps
-            input_value = str(steps)
-            if(direction == "R"):
+            print(entry)
+            steps = round(int(entry)/360 * SPR_Y)
+            print(steps)
+            if(direction == CW):
                 Y_total = Y_total + steps
-            elif(direction == "L"):
+            elif(direction == CCW):
                 Y_total = Y_total - steps
+            print(Y_total)
+                    
+            curr_dir_pin = DIR_Y
+            curr_step_pin = STEP_Y
+            curr_delay = delay_Y
         else:
             print("Please home motor Y first.")
             return()
-    elif (motor == "Z"):
-        # print("Z = " + Z_homed)
+            
+    if(motor == "Z"):
         if(Z_homed == "1"):
             entry = entry_Z.get()
-            if(step_type == "unit"):
-                steps = round((int(entry)-0)/1000 * (steps_per_mm_Z))
-            elif(step_type == "steps"):
-                steps = steps
-            input_value = str(steps)
-            if(direction == "R"):
+            print(entry)
+            steps = round(int(entry)/360 * SPR_Z)
+            print(steps)
+            if(direction == CW):
                 Z_total = Z_total + steps
-            elif(direction == "L"):
+            elif(direction == CCW):
                 Z_total = Z_total - steps
+            print(Z_total)
+                    
+            curr_dir_pin = DIR_Z
+            curr_step_pin = STEP_Z
+            curr_delay = delay_Z
         else:
             print("Please home motor Z first.")
             return()
-    elif (motor == "E"):
-        if(E_homed == "1"):
-            entry = entry_E.get()
-            if(step_type == "unit"):
-                steps = round((int(entry)-0)/1000 * (steps_per_mm_E))
-            elif(step_type == "steps"):
-                steps = steps
-            input_value = str(steps)
-            if(direction == "R"):
-                E_total = E_total + steps
-            elif(direction == "L"):
-                E_total = E_total - steps
-            # ~ print("Current E positon (move_motor): " + str(E_total))
-        else:
-            print("Please home motor E first.")
-            return()
-    elif (motor == "Q"):
-        if(Q_homed == "1"):
-            entry = entry_Q.get()
-            if(step_type == "unit"):
-                steps = round((int(entry)-0)/1000 * (steps_per_mm_Q))
-            elif(step_type == "steps"):
-                steps = steps
-            input_value = str(steps)
-            if(direction == "R"):
-                Q_total = Q_total + steps
-            elif(direction == "L"):
-                Q_total = Q_total - steps
-        else:
-            print("Please home motor Q first.")
-            return()
+    
+    GPIO.output(curr_dir_pin, direction)
+    for x in range(steps):
+        GPIO.output(curr_step_pin, GPIO.HIGH)
+        sleep(curr_delay)
+        GPIO.output(curr_step_pin, GPIO.LOW)
+        sleep(curr_delay)
         
-    # combine value to string to send to Arduino
-    send_string = motor + "_" + direction + "_" + input_value + "\n"
-    # print("serial command: " + send_string.rstrip())
-    
-    # Send command to Arduino
-    ser.write(str(send_string).encode())    
-    
-    while(1):
-        line = ser.readline().decode('ascii').rstrip()
-        # print(line)
-        if(line == "0" or line == "1"):
-            return
-        time.sleep(0.01)
+
 
 def deactivate_motors():
-    send_string = "x_deactivate_x" + "\n"
-    print("serial command: " + send_string)
     
     # Send command to Arduino
     ser.write(str(send_string).encode())
@@ -421,11 +392,11 @@ def start_scan():
     
     # move all motors to start
     print("Moving all motors to start position.")
-    move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_total - X_0))
-    move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_total - Y_0))
-    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_total - Z_min_m45))
-    move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_total - E_min_m45))
-    move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_total - Q_min_m45))
+    move_motor(motor = "X", direction = CCW, step_type = "steps", steps = int(X_total - X_0))
+    move_motor(motor = "Y", direction = CCW, step_type = "steps", steps = int(Y_total - Y_0))
+    move_motor(motor = "Z", direction = CCW, step_type = "steps", steps = int(Z_total - Z_min_m45))
+    move_motor(motor = "E", direction = CCW, step_type = "steps", steps = int(E_total - E_min_m45))
+    move_motor(motor = "Q", direction = CCW, step_type = "steps", steps = int(Q_total - Q_min_m45))
     
     time.sleep(2)
     
@@ -442,18 +413,18 @@ def start_scan():
             # ~ print(e)
             E = round(E_y_sin_m45_steps[e])
             if(E >= 0):
-                E_dir = "L"
+                E_dir = CCW
             if(E <= 0):
-                E_dir = "R"
+                E_dir = CW
             E = abs(E)
             # ~ print(E)
             
             q = x
             Q = round(Q_y_sin_m45_steps[e])
             if(Q >= 0):
-                Q_dir = "L"
+                Q_dir = CCW
             if(Q <= 0):
-                Q_dir = "R"
+                Q_dir = CW
             Q = abs(Q)
             # ~ print(Q)
             
@@ -470,17 +441,17 @@ def start_scan():
                 # time.sleep(1)
                 
                 if(z <  Z_increments-1):
-                    move_motor(motor = "Z", direction = "R", step_type = "steps", steps = Z_steps_per_increment) 
+                    move_motor(motor = "Z", direction = CW, step_type = "steps", steps = Z_steps_per_increment) 
                     print("dalying " + str(int(entry_delay_pics.get())-0) + " s...")
                     time.sleep((int(entry_delay_pics.get())-0))
                 elif(z ==  Z_increments-1):
                     print("Resetting motor Z by " + str((Z_increments-1)*Z_steps_per_increment))
-                    move_motor(motor = "Z", direction = "L", step_type = "steps", steps = int(Z_increments-1)*Z_steps_per_increment)
+                    move_motor(motor = "Z", direction = CCW, step_type = "steps", steps = int(Z_increments-1)*Z_steps_per_increment)
                     time.sleep((int(entry_delay_pics.get())-0))
                     print("****************")
             if(x <  X_increments-1):
                 # ~ plt.plot(x, E)
-                move_motor(motor = "X", direction = "R", step_type = "steps", steps = X_steps_per_increment) 
+                move_motor(motor = "X", direction = CW, step_type = "steps", steps = X_steps_per_increment) 
                 
                 print("**** moving E and Q")
                 move_motor(motor = "E", direction = E_dir, step_type = "steps", steps = E) 
@@ -490,24 +461,24 @@ def start_scan():
                 
             elif(x ==  X_increments-1):                
                 print("Resetting motor X by " + str((X_increments-1)*X_steps_per_increment))
-                move_motor(motor = "X", direction = "L", step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
+                move_motor(motor = "X", direction = CCW, step_type = "steps", steps = int(X_increments-1)*X_steps_per_increment)
                                 
                 print("Resetting motor E by " + str(E_min_m45 - E_total))
-                move_motor(motor = "E", direction = "L", step_type = "steps", steps = int(E_min_m45 - E_total))
+                move_motor(motor = "E", direction = CCW, step_type = "steps", steps = int(E_min_m45 - E_total))
                 
                 print("Resetting motor Q by " + str(Q_min_m45 - Q_total))
-                move_motor(motor = "Q", direction = "L", step_type = "steps", steps = int(Q_min_m45 - Q_total))
+                move_motor(motor = "Q", direction = CCW, step_type = "steps", steps = int(Q_min_m45 - Q_total))
                 print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
                 time.sleep((int(entry_delay_pics.get())+2))
                 
             
         if(y <  Y_increments-1):
-            move_motor(motor = "Y", direction = "R", step_type = "steps", steps = Y_steps_per_increment)
+            move_motor(motor = "Y", direction = CW, step_type = "steps", steps = Y_steps_per_increment)
             print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
             time.sleep((int(entry_delay_pics.get())+2))
         elif(y ==  Y_increments-1):                
             print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
-            move_motor(motor = "Y", direction = "L", step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
+            move_motor(motor = "Y", direction = CCW, step_type = "steps", steps = int(Y_increments-1)*Y_steps_per_increment)
             print("dalying " + str(int(entry_delay_pics.get())-2) + " s...")
             time.sleep((int(entry_delay_pics.get())+2))
                     
@@ -575,21 +546,6 @@ def go_to_preset(X, Y):
     global Z_max_m0
     global Z_max_p45
     
-    global E_total
-    global E_min_m45
-    global E_min_m0
-    global E_min_p45
-    global E_max_m45
-    global E_max_m0
-    global E_max_p45
-    
-    global Q_total
-    global Q_min_m45
-    global Q_min_m0
-    global Q_min_p45
-    global Q_max_m45
-    global Q_max_m0
-    global Q_max_p45
     global curr_preset
     
     # ~ redefine current position as <>_total xxx: here!: give every setting a flag. If flag == 0, then take current total value. Else, take set value
@@ -626,9 +582,9 @@ def go_to_preset(X, Y):
         
         if(curr_x_steps < 0):
             curr_x_steps = abs(curr_x_steps)
-            curr_direction = "R"
+            curr_direction = CW
         else:
-            curr_direction = "L"
+            curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_x_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = round(curr_x_steps)) 
@@ -639,9 +595,9 @@ def go_to_preset(X, Y):
         
         if(curr_x_steps < 0):
             curr_x_steps = abs(curr_x_steps)
-            curr_direction = "R"
+            curr_direction = CW
         else:
-            curr_direction = "L"
+            curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_x_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = round(curr_x_steps)) 
@@ -655,9 +611,9 @@ def go_to_preset(X, Y):
         
         if(curr_y_steps < 0):
             curr_y_steps = abs(curr_y_steps)
-            curr_direction = "R"
+            curr_direction = CW
         else:
-            curr_direction = "L"
+            curr_direction = CCW
         
         print("Moving " + curr_motor + " by " + str(curr_y_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
@@ -668,9 +624,9 @@ def go_to_preset(X, Y):
         
         if(curr_y_steps < 0):
             curr_y_steps = abs(curr_y_steps)
-            curr_direction = "R"
+            curr_direction = CW
         else:
-            curr_direction = "L"
+            curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_y_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
@@ -681,9 +637,9 @@ def go_to_preset(X, Y):
         
         if(curr_y_steps < 0):
             curr_y_steps = abs(curr_y_steps)
-            curr_direction = "R"
+            curr_direction = CW
         else:
-            curr_direction = "L"
+            curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_y_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_y_steps) 
@@ -699,18 +655,18 @@ def go_to_preset(X, Y):
             
             if(curr_z_steps < 0):
                 curr_z_steps = abs(curr_z_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_z_steps = Z_total - Z_max_m45
             curr_motor = "Z"
             
             if(curr_z_steps < 0):
                 curr_z_steps = abs(curr_z_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         
         print("Moving " + curr_motor + " by " + str(curr_z_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_z_steps) 
@@ -722,18 +678,18 @@ def go_to_preset(X, Y):
             
             if(curr_z_steps < 0):
                 curr_z_steps = abs(curr_z_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_z_steps = Z_total - Z_max_m0
             curr_motor = "Z"
             
             if(curr_z_steps < 0):
                 curr_z_steps = abs(curr_z_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_z_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_z_steps) 
@@ -745,18 +701,18 @@ def go_to_preset(X, Y):
             
             if(curr_z_steps < 0):
                 curr_z_steps = abs(curr_z_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_z_steps = Z_total - Z_max_p45
             curr_motor = "Z"
             
             if(curr_z_steps < 0):
                 curr_z_steps = abs(curr_z_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_z_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_z_steps) 
@@ -772,18 +728,18 @@ def go_to_preset(X, Y):
             
             if(curr_e_steps < 0):
                 curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_e_steps = E_total - E_max_m45
             curr_motor = "E"
             
             if(curr_e_steps < 0):
                 curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         
         print("Moving " + curr_motor + " by " + str(curr_e_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
@@ -795,18 +751,18 @@ def go_to_preset(X, Y):
             
             if(curr_e_steps < 0):
                 curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_e_steps = E_total - E_max_m0
             curr_motor = "E"
             
             if(curr_e_steps < 0):
                 curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_e_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
@@ -818,18 +774,18 @@ def go_to_preset(X, Y):
             
             if(curr_e_steps < 0):
                 curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_e_steps = E_total - E_max_p45
             curr_motor = "E"
             
             if(curr_e_steps < 0):
                 curr_e_steps = abs(curr_e_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_e_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_e_steps) 
@@ -845,18 +801,18 @@ def go_to_preset(X, Y):
             
             if(curr_q_steps < 0):
                 curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_q_steps = Q_total - Q_max_m45
             curr_motor = "Q"
             
             if(curr_q_steps < 0):
                 curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         
         print("Moving " + curr_motor + " by " + str(curr_q_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
@@ -868,18 +824,18 @@ def go_to_preset(X, Y):
             
             if(curr_q_steps < 0):
                 curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_q_steps = Q_total - Q_max_m0
             curr_motor = "Q"
             
             if(curr_q_steps < 0):
                 curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_q_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
@@ -891,18 +847,18 @@ def go_to_preset(X, Y):
             
             if(curr_q_steps < 0):
                 curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
         elif(X == 90):
             curr_q_steps = Q_total - Q_max_p45
             curr_motor = "Q"
             
             if(curr_q_steps < 0):
                 curr_q_steps = abs(curr_q_steps)
-                curr_direction = "R"
+                curr_direction = CW
             else:
-                curr_direction = "L"
+                curr_direction = CCW
             
         print("Moving " + curr_motor + " by " + str(curr_q_steps))
         move_motor(motor = curr_motor, direction = curr_direction, step_type = "steps", steps = curr_q_steps) 
@@ -1046,61 +1002,61 @@ spacer_Q = tk.Label(root, text="Motor controls")
 spacer_Q.grid(row=r, column=0, columnspan=2)
 
 r = r+1
-button_X_L = tk.Button(root, text="<<< X", command=lambda: move_motor(motor = "X", direction = "L", step_type = "unit"))
+button_X_L = tk.Button(root, text="<<< X", command=lambda: move_motor(motor = "X", direction = CCW))
 button_X_L.grid(row=r, column=0)
 entry_X = tk.Entry(root, width=7)
 new_text = "45"
 entry_X.insert(0, new_text)
 entry_X.grid(row=r, column=1)
-button_X_R = tk.Button(root, text="X >>>", command=lambda: move_motor(motor = "X", direction = "R", step_type = "unit"))
+button_X_R = tk.Button(root, text="X >>>", command=lambda: move_motor(motor = "X", direction = CW))
 button_X_R.grid(row=r, column=2)
 spacer_X = tk.Label(root, text="°         ")
 spacer_X.grid(row=r, column=3)
 
 r = r+1
-button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = "L", step_type = "unit"))
+button_Y_L = tk.Button(root, text="<<< Y", command=lambda: move_motor(motor = "Y", direction = CCW))
 button_Y_L.grid(row=r, column=0)
 entry_Y = tk.Entry(root, width=7)
 new_text = "10"
 entry_Y.insert(0, new_text)
 entry_Y.grid(row=r, column=1)
-button_Y_R = tk.Button(root, text="Y >>>", command=lambda: move_motor(motor = "Y", direction = "R", step_type = "unit"))
+button_Y_R = tk.Button(root, text="Y >>>", command=lambda: move_motor(motor = "Y", direction = CW))
 button_Y_R.grid(row=r, column=2)
 spacer_Y = tk.Label(root, text="°         ")
 spacer_Y.grid(row=r, column=3)
 
 r = r+1
-button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = "L", step_type = "unit"))
+button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = CCW))
 button_Z_L.grid(row=r, column=0)
 entry_Z = tk.Entry(root, width=7)
-new_text = "1000"
+new_text = "360"
 entry_Z.insert(0, new_text)
 entry_Z.grid(row=r, column=1)
-button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = "R", step_type = "unit"))
+button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = CW))
 button_Z_R.grid(row=r, column=2)
 spacer_Z = tk.Label(root, text="um        ")
 spacer_Z.grid(row=r, column=3)
 
 r = r+1
-button_E_L = tk.Button(root, text="<<< E", command=lambda: move_motor(motor = "E", direction = "L", step_type = "unit"))
+button_E_L = tk.Button(root, text="<<< E", command=lambda: move_motor(motor = "E", direction = CCW))
 button_E_L.grid(row=r, column=0)
 entry_E = tk.Entry(root, width=7)
 new_text = "1000"
 entry_E.insert(0, new_text)
 entry_E.grid(row=r, column=1)
-button_E_R = tk.Button(root, text="E >>>", command=lambda: move_motor(motor = "E", direction = "R", step_type = "unit"))
+button_E_R = tk.Button(root, text="E >>>", command=lambda: move_motor(motor = "E", direction = CW))
 button_E_R.grid(row=r, column=2)
 spacer_E = tk.Label(root, text="um        ")
 spacer_E.grid(row=r, column=3)
 
 r = r+1
-button_Q_L = tk.Button(root, text="<<< Q", command=lambda: move_motor(motor = "Q", direction = "L", step_type = "unit"))
+button_Q_L = tk.Button(root, text="<<< Q", command=lambda: move_motor(motor = "Q", direction = CCW))
 button_Q_L.grid(row=r, column=0)
 entry_Q = tk.Entry(root, width=7)
 new_text = "1000"
 entry_Q.insert(0, new_text)
 entry_Q.grid(row=r, column=1)
-button_Q_R = tk.Button(root, text="Q >>>", command=lambda: move_motor(motor = "Q", direction = "R", step_type = "unit"))
+button_Q_R = tk.Button(root, text="Q >>>", command=lambda: move_motor(motor = "Q", direction = CW))
 button_Q_R.grid(row=r, column=2)
 spacer_Q = tk.Label(root, text="um        ")
 spacer_Q.grid(row=r, column=3)
