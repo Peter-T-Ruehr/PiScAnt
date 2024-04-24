@@ -25,6 +25,9 @@ capture_config = picam2.create_still_configuration()
 # ~ steps_per_mm_E = round(1/lead_E * steps_per_rev_E)
 # ~ steps_per_mm_Q = round(1/lead_Q * steps_per_rev_Q)
 
+# scan hptot delay
+scan_photo_delay = 250
+
 # ~ initial motor step settings
 X_total = 0
 X_min = 0
@@ -33,7 +36,6 @@ X_max = X_min + 6400
 Y_total = 0
 Y_min = 0
 Y_max = 0
-
 
 Z_total = 0
 Z_min = 0
@@ -86,7 +88,7 @@ GPIO.output(SLP_Z, GPIO.LOW)
 
 delay_X = .000025
 delay_Y = .0002
-delay_Z = .0003
+delay_Z = 0.0005 # .0003
 
 # ~ set initial number of iterations
 iterations_start_X = 8
@@ -124,8 +126,7 @@ def move_motor(motor,
                 direction,
                 steps = 1):
     
-    # ~ print(motor)
-    
+
     global X_total
     global Y_total
     global Z_total
@@ -134,8 +135,8 @@ def move_motor(motor,
     Y_homed = "1"
     Z_homed = "1"
     
-    print("yo1")
-    print(steps)
+    # ~ print("yo1")
+    # ~ print(steps)
     if(motor == "X"):
         if(X_homed == "1"):
             if steps == 1:
@@ -146,6 +147,7 @@ def move_motor(motor,
             else:
                 steps = steps
                 
+            print("motor: " + motor + "; steps: " + str(steps) + "; dir: " + str(direction))
             
             # ~ print("yo3")
             # ~ print(steps)
@@ -178,7 +180,9 @@ def move_motor(motor,
                 # ~ steps = round(int(entry)/360 * SPR_Y)
             else:
                 steps = steps
-            print(steps)
+                
+            print("motor: " + motor + "; steps: " + str(steps) + "; dir: " + str(direction))
+            
             if(direction == CW):
                 Y_total = Y_total + steps
             elif(direction == CCW):
@@ -206,7 +210,9 @@ def move_motor(motor,
                 # ~ steps = round(int(entry)/360 * SPR_Z)
             else:
                 steps = steps
-            print(steps)
+                
+            print("motor: " + motor + "; steps: " + str(steps) + "; dir: " + str(direction))
+            
             if(direction == CW):
                 Z_total = Z_total + steps
             elif(direction == CCW):
@@ -235,25 +241,31 @@ def move_motor(motor,
         GPIO.output(curr_step_pin, GPIO.LOW)
         sleep(curr_delay)
         
-    if(motor == "Z"):
-        deactivate_motors(motor = "X")
+    # ~ if(motor == "Z"):
+        # ~ deactivate_motors(motor = "Z")
 
 def deactivate_motors(motor):
     if motor == "X" or motor == "all":
+        print("Deactivating X")
         GPIO.output(SLP_X, GPIO.LOW)
     if motor == "Y" or motor == "all":
+        print("Deactivating X")
         GPIO.output(SLP_Y, GPIO.LOW)
     if motor == "Z" or motor == "all":
+        print("Deactivating Z")
         GPIO.output(SLP_Z, GPIO.LOW)
         
 def activate_motors(motor):
-    print(motor)
     if motor == "X" or motor == "all":
         GPIO.output(SLP_X, GPIO.HIGH)
+        print("Activating X")
     if motor == "Y" or motor == "all":
         GPIO.output(SLP_Y, GPIO.HIGH)
+        print("Activating Y")
     if motor == "Z" or motor == "all":
         GPIO.output(SLP_Z, GPIO.HIGH)
+        print("Activating Z")
+    sleep(.05)
     
 def get_project_name():
     global project_name
@@ -272,6 +284,7 @@ def start_camera():
 
     picam2.start()
     time.sleep(1)
+    set_camera()
 
 def set_camera():
     global exposure
@@ -301,8 +314,10 @@ def take_picture(state = "scan", pos = ""):
         curr_image_name = './' + project_name +'/previews/' + curr_time + '.jpg'
     
     elif(state == "scan"):
+        print("Checking if folder exists...")
         os.makedirs(project_name + "/scan/", exist_ok=True) # , exist_ok=True
         curr_image_name = './' + project_name +'/scan/' + pos + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
+        print("Waituing for "+str(scan_photo_delay)+" ms...")
         
     #save the picture
     print("********************** taking picture...")
@@ -329,8 +344,8 @@ def start_scan():
     print("Scan process initalized.")
     
     print("Starting and setting camera and interations.")
-    set_iterations()
-    start_camera()
+    set_iterations(X_it=entry_X_it.get(), Y_it=entry_Y_it.get(), Z_it=entry_Z_it.get(), E_it=entry_X_it.get(), Q_it=entry_X_it.get())
+    # ~ start_camera()
     set_camera()
     
     
@@ -429,6 +444,8 @@ def start_scan():
             time.sleep((int(entry_delay_pics.get())+2))
                     
     print('Scan done!')
+    print("Deactivating motors.")
+    deactivate_motors(motor = "all")
     
     
 def set_motor_pos(motor, pos):
@@ -590,7 +607,7 @@ r = r+1
 button_X_L = tk.Button(root, text="<<< X", command=lambda: move_motor(motor = "X", direction = CCW))
 button_X_L.grid(row=r, column=0)
 entry_X = tk.Entry(root, width=7)
-new_text = "6400"
+new_text = "1600"
 entry_X.insert(0, new_text)
 entry_X.grid(row=r, column=1)
 button_X_R = tk.Button(root, text="X >>>", command=lambda: move_motor(motor = "X", direction = CW))
