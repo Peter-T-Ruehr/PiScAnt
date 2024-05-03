@@ -405,7 +405,7 @@ def start_scan():
                 print("Y = " + str(y))
                 print("Z = " + str(z))
                 
-                take_picture(state = "scan", pos = 'X'+str(x)+'_Y'+str(y)+'_Z'+str(z))
+                take_picture(state = "scan", pos = 'Y'+str(y)+'_X'+str(x)+'_Z'+str(z))
                 print("taking picture...")
                 # time.sleep(1)
                 
