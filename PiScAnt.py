@@ -61,7 +61,7 @@ SPR_Y = SPR/microstep_Y    # steps per revolution incl. microstepping
 DIR_Z = 20   # Direction GPIO Pin
 STEP_Z = 21  # Step GPIO Pin
 SLP_Z = 4    # Seep GPIO Pin
-microstep_Z = 1/2    # microstepping
+microstep_Z = 1/32    # microstepping
 SPR_Z = SPR/microstep_Z    # steps per revolution incl. microstepping
 
 
@@ -88,7 +88,7 @@ GPIO.output(SLP_Z, GPIO.LOW)
 
 delay_X = .000025
 delay_Y = .0002
-delay_Z = 0.0005 # .0003
+delay_Z = 0.00075 # .0005
 
 # ~ set initial number of iterations
 iterations_start_X = 8
@@ -194,7 +194,7 @@ def move_motor(motor,
 
             curr_dir_pin = DIR_Y
             curr_step_pin = STEP_Y
-            curr_slp_pin = SLP_X
+            curr_slp_pin = SLP_Y
             curr_delay = delay_Y
             
             activate_motors(motor = "Y")
@@ -224,7 +224,7 @@ def move_motor(motor,
                     
             curr_dir_pin = DIR_Z
             curr_step_pin = STEP_Z
-            curr_slp_pin = SLP_X
+            curr_slp_pin = SLP_Z
             curr_delay = delay_Z
             
             activate_motors(motor = "Z")
@@ -235,11 +235,29 @@ def move_motor(motor,
             return()
     
     GPIO.output(curr_dir_pin, direction)
+    curr_step_delay = curr_delay # curr_delay * 2
+    if steps >= 400:
+        acceleration_steps = 200
+        print(acceleration_steps)
+    else:
+        acceleration_steps = round((steps-0.5*steps)/2)
+        print(acceleration_steps)
+        
     for x in range(steps):
         GPIO.output(curr_step_pin, GPIO.HIGH)
-        sleep(curr_delay)
+        sleep(curr_step_delay)
         GPIO.output(curr_step_pin, GPIO.LOW)
-        sleep(curr_delay)
+        sleep(curr_step_delay)
+        
+            
+        # ~ if x <= acceleration_steps:
+            # ~ curr_step_delay = .99 * curr_step_delay
+            # ~ print(round(curr_step_delay,6))
+        # ~ elif x == acceleration_steps:
+            # ~ curr_step_delay = curr_delay
+        # ~ elif x >= (steps-acceleration_steps):
+            # ~ curr_step_delay = 1.01 * curr_step_delay
+            # ~ print(round(curr_step_delay,6))
         
     # ~ if(motor == "Z"):
         # ~ deactivate_motors(motor = "Z")
@@ -316,7 +334,7 @@ def take_picture(state = "scan", pos = ""):
     elif(state == "scan"):
         print("Checking if folder exists...")
         os.makedirs(project_name + "/scan/", exist_ok=True) # , exist_ok=True
-        curr_image_name = './' + project_name +'/scan/' + pos + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
+        curr_image_name = './' + project_name +'/scan/' + pos  + '.jpg' # + "_" + str(exposure/1000000) + '_' + str(gain) + '.jpg'
         print("Waituing for "+str(scan_photo_delay)+" ms...")
         
     #save the picture
@@ -435,12 +453,12 @@ def start_scan():
             
         if(y <  Y_increments-1):
             move_motor(motor = "Y", direction = CW, steps = Y_steps_per_increment)
-            print("dalaying " + str(int(entry_delay_pics.get())-2) + " s...")
+            print("dalaying ...")# + str(int(entry_delay_pics.get())-2) + " s...")
             time.sleep((int(entry_delay_pics.get())+2))
         elif(y ==  Y_increments-1):                
             print("Resetting motor Y by " + str((Y_increments-1)*Y_steps_per_increment))
             move_motor(motor = "Y", direction = CCW, steps = int(Y_increments-1)*Y_steps_per_increment)
-            print("dalaying " + str(int(entry_delay_pics.get())-2) + " s...")
+            print("dalaying ...")# + str(int(entry_delay_pics.get())-2) + " s...")
             time.sleep((int(entry_delay_pics.get())+2))
                     
     print('Scan done!')
@@ -572,7 +590,7 @@ r = r+1
 spacer_Q = tk.Label(root, text='photo delay (s)')
 spacer_Q.grid(row=r, column=0)
 entry_delay_pics = tk.Entry(root, width=7)
-new_text = "1"
+new_text = "1.5"
 entry_delay_pics.insert(0, new_text)
 entry_delay_pics.grid(row=r, column=1)
 
@@ -628,13 +646,13 @@ button_Y_R.grid(row=r, column=2)
 # ~ spacer_Y.grid(row=r, column=3)
 
 r = r+1
-button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = CCW))
+button_Z_L = tk.Button(root, text="<<< Z", command=lambda: move_motor(motor = "Z", direction = CW))
 button_Z_L.grid(row=r, column=0)
 entry_Z = tk.Entry(root, width=7)
-new_text = "400"
+new_text = "100"
 entry_Z.insert(0, new_text)
 entry_Z.grid(row=r, column=1)
-button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = CW))
+button_Z_R = tk.Button(root, text="Z >>>", command=lambda: move_motor(motor = "Z", direction = CCW))
 button_Z_R.grid(row=r, column=2)
 # ~ spacer_Z = tk.Label(root, text="steps    ")
 # ~ spacer_Z.grid(row=r, column=3)
